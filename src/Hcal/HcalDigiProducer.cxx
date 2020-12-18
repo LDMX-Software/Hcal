@@ -133,7 +133,7 @@ void HcalDigiProducer::produce(framework::Event& event) {
 
   // looper over sim hits and aggregate energy depositions for each detID
   auto hcalHits{event.getCollection<simcore::event::SimCalorimeterHit>(
-      recon::event::EventConstants::HCAL_SIM_HITS, sim_hit_pass_name_)};
+      simcore::event::SimCalorimeterHit::HCAL_COLLECTION, sim_hit_pass_name_)};
 
   for (const simcore::event::SimCalorimeterHit& simHit : hcalHits) {
     int detIDraw = simHit.getID();
