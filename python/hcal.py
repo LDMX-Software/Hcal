@@ -33,7 +33,7 @@ class HcalDigiProducer(ldmxcfg.Producer) :
 
 class HcalVetoProcessor(ldmxcfg.Producer) :
     """Configuration for veto in HCal
-    
+
     Sets all parameters to reasonable defaults.
 
     Examples
@@ -50,3 +50,35 @@ class HcalVetoProcessor(ldmxcfg.Producer) :
         self.max_depth = 4000.0
         self.back_min_pe = 1.
 
+class HcalMIPTracking(ldmxcfg.Producer) :
+    """Configuration for MIP Tracking in HCal
+
+    Sets all parameters to reasonable defaults.
+
+    Examples
+    --------
+        from LDMX.EventProc.hcal import HcalMIPTracking
+        p.sequence.append( HcalMIPTracking() )
+    """
+
+    def __init__(self,name = 'hcalMIPTracks') :
+        super().__init__(name,'hcal::HcalMIPTracking','Hcal')
+
+        self.BACK_HCAL_START_Z_ = 840.
+        self.MIP_MIN_PE_ = 36.
+        self.MIP_MAX_PE_ = 900.
+        self.MIN_TRACK_HITS_ = 4
+        self.MIN_SEED_HITS_ = 3
+        self.MAX_SEED_HIT_ERROR_ = 300.
+        self.MAX_TRACK_EXTRAP_SIGMA_ = 5.
+        self.MAX_LAYERS_CONSEC_MISSED_ = 2
+
+        digiprod = HcalDigiProducer()
+
+        self.strips_side_lr_per_layer = digiprod.strips_side_lr_per_layer
+        self.num_side_lr_hcal_layers = digiprod.num_side_lr_hcal_layers
+        self.strips_side_tb_per_layer = digiprod.strips_side_tb_per_layer
+        self.num_side_tb_hcal_layers = digiprod.num_side_tb_hcal_layers
+        self.strips_back_per_layer = digiprod.strips_back_per_layer
+        self.num_back_hcal_layers = digiprod.num_back_hcal_layers
+        self.strip_position_resolution = digiprod.strip_position_resolution
