@@ -19,7 +19,7 @@ ClassImp(ldmx::HcalMIPTracks)
 
   void HcalMIPTracks::Clear() {
       //trackHits_;
-      x_ = -9999.;
+      /*x_ = -9999.;
       y_ = -9999.;
       dx_ = -9999.;
       dy_ = -9999.;
@@ -34,7 +34,7 @@ ClassImp(ldmx::HcalMIPTracks)
       dxdy_ = -9999.;
       dydy_ = -9999.;
       nTracks_ = 0;
-      isTriggered_ = false;
+      isTriggered_ = false;*/
   }
 
   void HcalMIPTracks::Print() const {
