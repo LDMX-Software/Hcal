@@ -5,6 +5,7 @@
 #include "Hcal/HcalMIPTracking.h"
 #include "Hcal/HcalDigiProducer.h"
 #include "Hcal/Event/HcalMIPTracks.h"
+#include "Hcal/Event/HcalMIPTrack.h"
 
 #include <exception>
 #include <iostream>
@@ -70,15 +71,15 @@ void HcalMIPTracking::produce(framework::Event& event) {
     std::vector<std::vector<ldmx::HcalHit>> tracklist = FindTracks(hcalIsoSortedHits);
     std::vector<ldmx::HcalHit> trackhits;
 
-    if(tracklist.size() < 1){
+    /*if(tracklist.size() < 1){
       ldmx::HcalMIPTracks track;
       track.setIsTriggered(trigger);
       track.setNTracks(tracklist.size());
       event.add("HcalMIPTracks", track);
       return;
-    }
+    }*/
 
-    else if(tracklist.size() == 1){
+    /*else if(tracklist.size() == 1){
       trackhits = tracklist[0];
     }
 
@@ -125,8 +126,35 @@ void HcalMIPTracking::produce(framework::Event& event) {
     track.setDYDY(fit[13]);
     track.setIsTriggered(trigger);
     track.setNTracks(tracklist.size());
-    event.add("HcalMIPTracks", track);
+    event.add("HcalMIPTracks", track);*/
 
+    ldmx::HcalMIPTracks tracks;
+    tracks.setNTracks(tracklist.size());
+    tracks.setIsTriggered(trigger);
+    std::vector<ldmx::HcalMIPTrack> miptracks;
+    for(std::vector<ldmx::HcalHit> trackhits : tracklist){
+      ldmx::HcalMIPTrack track;
+      track.setMIPTrackHits(trackhits);
+      float *fit;
+      fit = fitTrackLS(trackhits);
+      track.setX(fit[0]);
+      track.setY(fit[1]);
+      track.setDX(fit[2]);
+      track.setDY(fit[3]);
+      track.setXX(fit[4]);
+      track.setXY(fit[5]);
+      track.setXDX(fit[6]);
+      track.setXDY(fit[7]);
+      track.setYY(fit[8]);
+      track.setYDX(fit[9]);
+      track.setYDY(fit[10]);
+      track.setDXDX(fit[11]);
+      track.setDXDY(fit[12]);
+      track.setDYDY(fit[13]);
+      miptracks.push_back(track);
+    }
+    tracks.setMIPTracks(miptracks);
+    event.add("HcalMIPTracks", tracks);
     return;
 }
 
@@ -509,16 +537,16 @@ float* HcalMIPTracking::fitTrackLS(std::vector<ldmx::HcalHit> &hitlist){
   params[1] = y0;
   params[2] = dx;
   params[3] = dy;
-  params[4] = x0_err;
-  params[5] = y0_err;
-  params[6] = dx_err;
-  params[7] = dy_err;
-  params[8] = 0.;
+  params[4] = x0_err*x0_err;
+  params[5] = 0;
+  params[6] = 0.;
+  params[7] = 0.;
+  params[8] = y0_err*y0_err;
   params[9] = 0.;
   params[10] = 0.;
-  params[11] = 0.;
+  params[11] = dx_err*dx_err;
   params[12] = 0.;
-  params[13] = 0.;
+  params[13] = dy_err*dy_err;
   /*params[4] = xx;
   params[5] = xy;
   params[6] = xdx;

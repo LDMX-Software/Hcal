@@ -5,8 +5,8 @@
  * @author Matt Solt, University of Virginia
  */
 
-#ifndef HCAL_EVENT_HCALMIPTRACKS_H_
-#define HCAL_EVENT_HCALMIPTRACKS_H_
+#ifndef HCAL_EVENT_HCALMIPTRACK_H_
+#define HCAL_EVENT_HCALMIPTRACK_H_
 
 //----------//
 //   ROOT   //
@@ -17,17 +17,16 @@
 //   LDMX   //
 //----------//
 #include "Hcal/Event/HcalHit.h"
-#include "Hcal/Event/HcalMIPTrack.h"
 
 namespace ldmx {
 
-class HcalMIPTracks {
+class HcalMIPTrack {
  public:
   /** Constructor */
-  HcalMIPTracks();
+  HcalMIPTrack();
 
   /** Destructor */
-  ~HcalMIPTracks();
+  ~HcalMIPTrack();
 
   /** Reset the object. */
   void Clear();
@@ -35,15 +34,13 @@ class HcalMIPTracks {
   /** Print out the object */
   void Print() const;
 
-  inline bool getIsTriggered() const { return isTriggered_; };
+  //inline bool getIsTriggered() const { return isTriggered_; };
 
-  //inline std::vector<ldmx::HcalHit> getMIPTrackHits() const { return trackHits_; };
+  inline std::vector<ldmx::HcalHit> getMIPTrackHits() const { return trackHits_; };
 
-  inline float getNTracks() const { return nTracks_; };
+  //inline float getNTracks() const { return nTracks_; };
 
-  inline std::vector<ldmx::HcalMIPTrack> getMIPTracks() const { return mipTracks_; };
-
-  /*inline float getX() const { return x_; };
+  inline float getX() const { return x_; };
 
   inline float getY() const { return y_; };
 
@@ -73,13 +70,13 @@ class HcalMIPTracks {
 
   inline void setMIPTrackHits(const std::vector<ldmx::HcalHit> trackHits) {
     trackHits_ = trackHits;
-  }*/
-
-  inline void setNTracks(const int nTracks) {
-    nTracks_ = nTracks;
   }
 
-  /*inline void setX(const float x) {
+  /*inline void setNTracks(const int nTracks) {
+    nTracks_ = nTracks;
+  }*/
+
+  inline void setX(const float x) {
     x_ = x;
   }
 
@@ -133,25 +130,19 @@ class HcalMIPTracks {
 
   inline void setDYDY(const float dydy) {
     dydy_ = dydy;
-  }*/
+  }
 
-  inline void setIsTriggered(const bool& isTriggered = true) {
+  /*inline void setIsTriggered(const bool& isTriggered = true) {
     isTriggered_ = isTriggered;
-  }
-
-  inline void setMIPTracks(std::vector<ldmx::HcalMIPTrack> mipTracks) {
-    mipTracks_ = mipTracks;
-  }
+  }*/
 
  private:
 
-  //std::vector<ldmx::HcalHit> trackHits_;
+  std::vector<ldmx::HcalHit> trackHits_;
 
-  int nTracks_{0};
+  //int nTracks_{0};
 
-  std::vector<ldmx::HcalMIPTrack> mipTracks_;
-
-  /*float x_{-9999.};
+  float x_{-9999.};
 
   float y_{-9999.};
 
@@ -177,14 +168,14 @@ class HcalMIPTracks {
 
   float dxdy_{-9999.};
 
-  float dydy_{-9999.};*/
+  float dydy_{-9999.};
 
   /** Flag indicating whether the event passes the Hcal veto. */
-  bool isTriggered_{false};
+  //bool isTriggered_{false};
 
-  ClassDef(HcalMIPTracks, 2);
+  ClassDef(HcalMIPTrack, 2);
 
-};  // HcalMIPTracks
+};  // HcalMIPTrack
 }  // namespace ldmx
 
-#endif  // HCAL_EVENT_HCALMIPTRACKS_H_
+#endif  // HCAL_EVENT_HCALMIPTRACK_H_
