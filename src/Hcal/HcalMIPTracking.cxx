@@ -13,11 +13,9 @@
 /*
 TODO:
 Calculate Covariances correctly
-Calculate Errors correctly
 Incorporate Side Hcal
 Fix same hits
 Update Event cxx File
-Define Object
 */
 
 namespace hcal {
@@ -67,6 +65,12 @@ void HcalMIPTracking::produce(framework::Event& event) {
     }
 
     bool trigger = IsTriggered(hcalIsoSortedHits);
+
+    std::vector<ldmx::HcalHit> hcalIsoSideHits = FindIsolatedSideHits(hcalHits);
+    bool sidetrigger = false;
+    if(hcalIsoSideHits.size() > 0){
+      sidetrigger = true;
+    }
 
     std::vector<std::vector<ldmx::HcalHit>> tracklist = FindTracks(hcalIsoSortedHits);
     std::vector<ldmx::HcalHit> trackhits;
@@ -131,6 +135,7 @@ void HcalMIPTracking::produce(framework::Event& event) {
     ldmx::HcalMIPTracks tracks;
     tracks.setNTracks(tracklist.size());
     tracks.setIsTriggered(trigger);
+    tracks.setIsSideTriggered(sidetrigger);
     std::vector<ldmx::HcalMIPTrack> miptracks;
     for(std::vector<ldmx::HcalHit> trackhits : tracklist){
       ldmx::HcalMIPTrack track;
@@ -184,6 +189,52 @@ std::vector<ldmx::HcalHit> HcalMIPTracking::FindIsolatedHits(std::vector<ldmx::H
       ldmx::HcalID detID2(hit2.getID());
       int section2 = detID2.getSection();
       if(section2 != 0){
+        continue;
+      }
+      int strip2 = detID2.getStrip();
+      int layer2 = detID2.getLayerID();
+      int PE2      = hit2.getPE();
+      if(PE2 < MIP_MIN_PE_ || PE2 > MIP_MAX_PE_){
+        continue;
+      }
+      if(layer == layer2 && std::abs(strip - strip2) <= 1){
+        isolated = false;
+        break;
+      }
+    }
+    if(isolated){
+      isohits.push_back(hit);
+    }
+  }
+  return isohits;
+}
+
+std::vector<ldmx::HcalHit> HcalMIPTracking::FindIsolatedSideHits(std::vector<ldmx::HcalHit> &hits){
+  std::vector<ldmx::HcalHit> isohits;
+  int i = 0;
+  for (const ldmx::HcalHit &hit : hits ) {
+    i++;
+    ldmx::HcalID detID(hit.getID());
+    int section = detID.getSection();
+    if(section == 0){
+      continue;
+    }
+    int strip = detID.getStrip();
+    int layer = detID.getLayerID();
+    int PE      = hit.getPE();
+    if(PE < MIP_MIN_PE_ || PE > MIP_MAX_PE_){
+      continue;
+    }
+    bool isolated = true;
+    int j = 0;
+    for (const ldmx::HcalHit &hit2 : hits ) {
+      j++;
+      if(i == j){ //This is the same hit
+        continue;
+      }
+      ldmx::HcalID detID2(hit2.getID());
+      int section2 = detID2.getSection();
+      if(section2 != section){
         continue;
       }
       int strip2 = detID2.getStrip();

@@ -77,6 +77,8 @@ class HcalMIPTracking : public framework::Producer {
 
   std::vector<ldmx::HcalHit> FindIsolatedHits(std::vector<ldmx::HcalHit>& hits);
 
+  std::vector<ldmx::HcalHit> FindIsolatedSideHits(std::vector<ldmx::HcalHit>& hits);
+
   float CalcDist(ldmx::HcalHit& h, std::vector<ldmx::HcalHit> &hits);
 
   std::vector<ldmx::HcalHit> chooseSeed(std::vector<std::vector<ldmx::HcalHit>> &seedlist);
