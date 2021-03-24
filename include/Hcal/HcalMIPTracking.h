@@ -43,6 +43,8 @@ class HcalMIPTracking : public framework::Producer {
 
   bool verbose_{false};
 
+  bool USE_ISOLATED_HITS_{false};
+
   double BACK_HCAL_START_Z_{840.};
 
   double MIP_MIN_PE_{36.};
@@ -75,9 +77,9 @@ class HcalMIPTracking : public framework::Producer {
 
   int SUPER_STRIP_SIZE_{1};
 
-  std::vector<ldmx::HcalHit> FindIsolatedHits(std::vector<ldmx::HcalHit>& hits);
+  std::vector<ldmx::HcalHit> FindIsolatedHits(std::vector<ldmx::HcalHit>& hits, bool &use_isolated);
 
-  std::vector<ldmx::HcalHit> FindIsolatedSideHits(std::vector<ldmx::HcalHit>& hits);
+  std::vector<ldmx::HcalHit> FindIsolatedSideHits(std::vector<ldmx::HcalHit>& hits, bool &use_isolated);
 
   float CalcDist(ldmx::HcalHit& h, std::vector<ldmx::HcalHit> &hits);
 

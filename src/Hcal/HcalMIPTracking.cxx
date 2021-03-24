@@ -33,6 +33,7 @@ void HcalMIPTracking::configure(framework::config::Parameters& parameters) {
   MAX_SEED_HIT_ERROR_ = parameters.getParameter<double>("MAX_SEED_HIT_ERROR_");
   MAX_TRACK_EXTRAP_SIGMA_ = parameters.getParameter<double>("MAX_TRACK_EXTRAP_SIGMA_");
   MAX_LAYERS_CONSEC_MISSED_ = parameters.getParameter<int>("MAX_LAYERS_CONSEC_MISSED_");
+  USE_ISOLATED_HITS_ = parameters.getParameter<bool>("USE_ISOLATED_HITS_");
 
   STRIPS_BACK_PER_LAYER_ = parameters.getParameter<int>("strips_back_per_layer");
   NUM_BACK_HCAL_LAYERS_ = parameters.getParameter<int>("num_back_hcal_layers");
@@ -46,7 +47,7 @@ void HcalMIPTracking::produce(framework::Event& event) {
 
     std::vector<ldmx::HcalHit> hcalHits = event.getCollection<ldmx::HcalHit>("HcalRecHits");
 
-    std::vector<ldmx::HcalHit> hcalIsoHits = FindIsolatedHits(hcalHits);
+    std::vector<ldmx::HcalHit> hcalIsoHits = FindIsolatedHits(hcalHits, USE_ISOLATED_HITS_ );
 
     std::map<int, std::vector<ldmx::HcalHit>> hcalIsoSortedHits;
 
@@ -66,7 +67,7 @@ void HcalMIPTracking::produce(framework::Event& event) {
 
     bool trigger = IsTriggered(hcalIsoSortedHits);
 
-    std::vector<ldmx::HcalHit> hcalIsoSideHits = FindIsolatedSideHits(hcalHits);
+    std::vector<ldmx::HcalHit> hcalIsoSideHits = FindIsolatedSideHits(hcalHits, USE_ISOLATED_HITS_);
     bool sidetrigger = false;
     if(hcalIsoSideHits.size() > 0){
       sidetrigger = true;
@@ -163,7 +164,7 @@ void HcalMIPTracking::produce(framework::Event& event) {
     return;
 }
 
-std::vector<ldmx::HcalHit> HcalMIPTracking::FindIsolatedHits(std::vector<ldmx::HcalHit> &hits){
+std::vector<ldmx::HcalHit> HcalMIPTracking::FindIsolatedHits(std::vector<ldmx::HcalHit> &hits, bool &use_isolated){
   std::vector<ldmx::HcalHit> isohits;
   int i = 0;
   for (const ldmx::HcalHit &hit : hits ) {
@@ -202,14 +203,14 @@ std::vector<ldmx::HcalHit> HcalMIPTracking::FindIsolatedHits(std::vector<ldmx::H
         break;
       }
     }
-    if(isolated){
+    if(isolated || !use_isolated){
       isohits.push_back(hit);
     }
   }
   return isohits;
 }
 
-std::vector<ldmx::HcalHit> HcalMIPTracking::FindIsolatedSideHits(std::vector<ldmx::HcalHit> &hits){
+std::vector<ldmx::HcalHit> HcalMIPTracking::FindIsolatedSideHits(std::vector<ldmx::HcalHit> &hits, bool &use_isolated){
   std::vector<ldmx::HcalHit> isohits;
   int i = 0;
   for (const ldmx::HcalHit &hit : hits ) {
@@ -248,7 +249,7 @@ std::vector<ldmx::HcalHit> HcalMIPTracking::FindIsolatedSideHits(std::vector<ldm
         break;
       }
     }
-    if(isolated){
+    if(isolated || !use_isolated){
       isohits.push_back(hit);
     }
   }

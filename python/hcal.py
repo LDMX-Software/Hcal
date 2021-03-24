@@ -72,6 +72,7 @@ class HcalMIPTracking(ldmxcfg.Producer) :
         self.MAX_SEED_HIT_ERROR_ = 300.
         self.MAX_TRACK_EXTRAP_SIGMA_ = 5.
         self.MAX_LAYERS_CONSEC_MISSED_ = 2
+        self.USE_ISOLATED_HITS_ = False
 
         digiprod = HcalDigiProducer()
 
