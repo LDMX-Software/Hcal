@@ -2,15 +2,20 @@
 
 ClassImp(ldmx::HcalCluster)
 
-    namespace ldmx {
+
+std::ostream& operator<<(std::ostream& s, const ldmx::HcalCluster& hc) {
+    return s << "HcalCluster { "
+             << "Energy: " << hc.getEnergy() << ", "
+             << "Position: (" << hc.getCentroidX() << ", "<< hc.getCentroidY() << ", "<< hc.getCentroidZ() << ") , "
+             << "Number of hits: " << hc.getNHits() << " }" ;
+  }
+namespace ldmx {
   HcalCluster::HcalCluster() {}
 
   HcalCluster::~HcalCluster() { Clear(); }
 
   void HcalCluster::Print() const {
-    std::cout << "HcalCluster { "
-              << "Energy: " << energy_ << ", "
-              << "Number of hits: " << nHits_ << " }" << std::endl;
+    std::cout << *this << std::endl;
   }
 
   void HcalCluster::Clear() {

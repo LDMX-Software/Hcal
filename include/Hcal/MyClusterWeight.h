@@ -13,8 +13,8 @@ namespace hcal {
     
             double operator()(const WorkingCluster& a, const WorkingCluster& b) { // returns weighting function, where smallest weights will be combined first
 
-                double rmol = 10.00; //Moliere radius of detector, roughly. In mm TODO
-                double dzchar = 100.0; // lateral shower development in mm TODO
+                double rmol = 94.09*(2.0/3); //Moliere radius of detector, roughly. In mm, assuming 2/3 of the value of polystyrene
+                double dzchar = 200.0; // lateral shower development in mm TODO
 
                 double aE = a.centroid().E();
                 double aX = a.centroid().Px();
@@ -39,7 +39,7 @@ namespace hcal {
                 double dijT = pow(pow(aX-bX,2) + pow(aY-bY,2),0.5); //Transverse Difference
                 //std::cout<<"Energy fraction "<<eFrac<<" distance "<<dijz<<std::endl;
                 double weightT = exp(pow(dijT/rmol,2))-1; //Trans --> massive
-                double weightZ = (exp(abs(dijz)/dzchar)-1); //Long
+                double weightZ = (exp(fabs(dijz)/dzchar)-1); //Long
                 //std::cout<<"Weight module returning "<<weightT<<" "<<weightZ<<std::endl;
                 //Return the highest of the two weights
                 if (weightT <= weightZ) {

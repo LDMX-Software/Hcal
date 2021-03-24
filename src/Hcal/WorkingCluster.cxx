@@ -2,6 +2,8 @@
 #include "Hcal/WorkingCluster.h"
 #include <iostream>
 
+std::ostream& operator<<(std::ostream& s, const hcal::WorkingCluster& wc) { return s << wc.centroid().E() << "MeV : " << wc.centroid().Px() << ","<< wc.centroid().Py() << ","<< wc.centroid().Pz(); }
+
 namespace hcal {
 
     WorkingCluster::WorkingCluster(const ldmx::HcalHit* eh, const ldmx::HcalGeometry& hex) {
@@ -35,7 +37,7 @@ namespace hcal {
     }
     
     void WorkingCluster::add(const WorkingCluster& wc) {
-        std::cout<<"Combining clusters "<<std::endl;
+      //        std::cout<<"Combining clusters "<<std::endl;
         double clusterE = wc.centroid().E();
         double centroidX = wc.centroid().Px();
         double centroidY = wc.centroid().Py();

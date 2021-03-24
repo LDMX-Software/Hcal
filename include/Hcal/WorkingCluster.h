@@ -58,4 +58,6 @@ namespace hcal {
     };
 }
 
+std::ostream& operator<<(std::ostream& s, const hcal::WorkingCluster& wc);
+
 #endif

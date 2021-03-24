@@ -120,4 +120,6 @@ class HcalCluster {
 };
 }  // namespace ldmx
 
+std::ostream& operator<<(std::ostream&, const ldmx::HcalCluster&);
+
 #endif

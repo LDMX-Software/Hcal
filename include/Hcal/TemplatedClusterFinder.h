@@ -43,7 +43,7 @@ namespace hcal {
                     int nseeds = 0;
                     // loop over all clusters:
                     for (unsigned int i = 0; i < clusters_.size(); i++) {
-                        std::cout<<" i cluster "<<i<<" of "<< clusters_.size()<<" wgt "<<minwgt<<std::endl;
+                      //                      std::cout<<" i cluster "<<i<<" of "<< clusters_.size()<<" wgt "<<minwgt<< " nclusters " << ncluster<< std::endl;
                         // skip if empty
                         if (clusters_[i].empty()) continue;
                         // check if cluster might be a seed minimum seed:
@@ -58,7 +58,7 @@ namespace hcal {
                         }
                         //loop over the rest of the clusters:
                         for (unsigned int j = i + 1; j < clusters_.size(); j++) {
-                            std::cout<<" j cluster "<<j<<" of "<< clusters_.size()<<std::endl;
+                          //    std::cout<<" j cluster "<<j<<" of "<< clusters_.size()<<std::endl;
                             if (clusters_[j].empty() or (!iseed and clusters_[j].centroid().E() < seed_threshold)) continue;
                             // calculate weights between the two clusters:
                             double wgt = wgt_(clusters_[i],clusters_[j]);// TODO
@@ -72,7 +72,8 @@ namespace hcal {
                         }
                     }
                     //if(abs(clusters_[mi].GetTime() - clusters_[mj].GetTime()) > deltaTime) continue;
-                   
+
+                    //                    std::cout << clusters_[mi] << " + " << clusters_[mj] << std::endl;
                     nseeds_ = nseeds;
                     transitionWeights_.insert(std::pair<int, double>(ncluster, minwgt));
                     //std::cout<<"Minium Weight "<<minwgt<<std::endl;
