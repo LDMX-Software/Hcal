@@ -215,7 +215,7 @@ void HcalDigiProducer::produce(framework::Event& event) {
         double voltage = simHit.getContrib(iContrib).edep * MeV_;
         double time =
             simHit.getContrib(iContrib).time;  // global time (t=0ns at target)
-        // time += position.at(2) / 299.702547; // shift light-speed particle
+        time -= position.at(2) / 299.702547; // shift light-speed particle
         // traveling along z
 
         if (end_close==0) {
