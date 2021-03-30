@@ -43,6 +43,10 @@ class HcalMIPTracks {
 
   inline float getNTracks() const { return nTracks_; };
 
+  inline float getTriggerStart() const { return startTrig_; };
+
+  inline float getTriggeredLayers() const { return nTrigLay_; };
+
   inline std::vector<ldmx::HcalMIPTrack> getMIPTracks() const { return mipTracks_; };
 
   /*inline float getX() const { return x_; };
@@ -79,6 +83,14 @@ class HcalMIPTracks {
 
   inline void setNTracks(const int nTracks) {
     nTracks_ = nTracks;
+  }
+
+  inline void setTriggerStart(const int startTrig) {
+    startTrig_ = startTrig;
+  }
+
+  inline void setTriggeredLayers(const int nTrigLay) {
+    nTrigLay_ = nTrigLay;
   }
 
   /*inline void setX(const float x) {
@@ -154,6 +166,10 @@ class HcalMIPTracks {
   //std::vector<ldmx::HcalHit> trackHits_;
 
   int nTracks_{0};
+
+  int startTrig_{0};
+
+  int nTrigLay_{0};
 
   std::vector<ldmx::HcalMIPTrack> mipTracks_;
 

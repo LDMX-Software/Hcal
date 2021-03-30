@@ -95,6 +95,8 @@ class HcalMIPTracking : public framework::Producer {
 
   bool IsTriggered(std::map<int, std::vector<ldmx::HcalHit>> &hitmap);
 
+  std::vector<int> TriggeredLayers(std::map<int, std::vector<ldmx::HcalHit>> &hitmap);
+
   float vectorMean(std::vector<float>& vec);
 
   float vectorSD2(std::vector<float>& vec);

@@ -137,6 +137,9 @@ void HcalMIPTracking::produce(framework::Event& event) {
     tracks.setNTracks(tracklist.size());
     tracks.setIsTriggered(trigger);
     tracks.setIsSideTriggered(sidetrigger);
+    std::vector<int> layers = TriggeredLayers(hcalIsoSortedHits);
+    tracks.setTriggerStart(layers[0]);
+    tracks.setTriggeredLayers(layers[1]);
     std::vector<ldmx::HcalMIPTrack> miptracks;
     for(std::vector<ldmx::HcalHit> trackhits : tracklist){
       ldmx::HcalMIPTrack track;
@@ -495,6 +498,40 @@ bool HcalMIPTracking::IsTriggered(std::map<int, std::vector<ldmx::HcalHit>> &hit
     }
   }
   return false;
+}
+
+std::vector<int> HcalMIPTracking::TriggeredLayers(std::map<int, std::vector<ldmx::HcalHit>> &hitmap){
+  int trigger = 0;
+  int firsthit = -9999;
+  int nLay = -9999;
+  for (int i = 0; i < NUM_BACK_HCAL_LAYERS_; i++){
+    int nHits = 0;
+    if(hitmap.count(i) < 1){
+      continue;
+    }
+    else{
+      nHits++;
+    }
+    if(hitmap.count(i+1) > 0){
+      nHits++;
+    }
+    if(hitmap.count(i+2) > 0){
+      nHits++;
+    }
+    if(hitmap.count(i+3) > 0){
+      nHits++;
+    }
+    if(nHits >= 3 && firsthit > 99){
+      firsthit = i;
+    }
+    if(nHits >= 3){
+      nLay = i + 3;
+    }
+  }
+  std::vector<int> output;
+  output.push_back(firsthit);
+  output.push_back(nLay);
+  return output;
 }
 
 float HcalMIPTracking::vectorMean(std::vector<float> &vec){
