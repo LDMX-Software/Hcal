@@ -521,7 +521,7 @@ std::vector<int> HcalMIPTracking::TriggeredLayers(std::map<int, std::vector<ldmx
     if(hitmap.count(i+3) > 0){
       nHits++;
     }
-    if(nHits >= 3 && firsthit > 99){
+    if(nHits >= 3 && firsthit < -9998){
       firsthit = i;
     }
     if(nHits >= 3){
