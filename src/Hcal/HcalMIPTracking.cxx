@@ -34,6 +34,9 @@ void HcalMIPTracking::configure(framework::config::Parameters& parameters) {
   MAX_TRACK_EXTRAP_SIGMA_ = parameters.getParameter<double>("MAX_TRACK_EXTRAP_SIGMA_");
   MAX_LAYERS_CONSEC_MISSED_ = parameters.getParameter<int>("MAX_LAYERS_CONSEC_MISSED_");
   USE_ISOLATED_HITS_ = parameters.getParameter<bool>("USE_ISOLATED_HITS_");
+  NUM_HITS_REQ_ = parameters.getParameter<int>("NUM_HITS_REQ_");
+  NUM_HITS_IN_GROUP_ = parameters.getParameter<int>("NUM_HITS_IN_GROUP_");
+  NUM_GROUPS_REQ_ = parameters.getParameter<int>("NUM_GROUPS_REQ_");
 
   STRIPS_BACK_PER_LAYER_ = parameters.getParameter<int>("strips_back_per_layer");
   NUM_BACK_HCAL_LAYERS_ = parameters.getParameter<int>("num_back_hcal_layers");
@@ -475,7 +478,7 @@ std::vector<std::vector<ldmx::HcalHit>> HcalMIPTracking::CleanSeedList(std::vect
 }
 
 bool HcalMIPTracking::IsTriggered(std::map<int, std::vector<ldmx::HcalHit>> &hitmap){
-  int trigger = 0;
+  /*int trigger = 0;
   for (int i = 0; i < NUM_BACK_HCAL_LAYERS_; i++){
     int nHits = 0;
     if(hitmap.count(i) < 1){
@@ -495,6 +498,36 @@ bool HcalMIPTracking::IsTriggered(std::map<int, std::vector<ldmx::HcalHit>> &hit
     }
     if(nHits >= 3){
       return true;
+    }
+  }
+  return false;*/
+  std::vector<int> triggers;
+  for (int i = 0; i < NUM_BACK_HCAL_LAYERS_; i++){
+    int nHits = 0;
+    for(int j = i; j < i+NUM_HITS_IN_GROUP_; j++){
+      if(hitmap.count(j) > 0){
+        nHits++;
+      }
+      if(nHits >= NUM_HITS_REQ_){
+        triggers.push_back(1);
+      }
+      else{
+        triggers.push_back(0);
+      }
+    }
+  }
+  for (int i = 0; i < triggers.size(); i++){
+    int n = 0;
+    for(int j = i; j < triggers.size(); j=j+NUM_HITS_IN_GROUP_){
+      if(triggers[j] == 0){
+        break;
+      }
+      else{
+        n++;
+      }
+      if(n >= NUM_GROUPS_REQ_){
+        return true;
+      }
     }
   }
   return false;
