@@ -61,6 +61,12 @@ class HcalMIPTracking : public framework::Producer {
 
   int MAX_LAYERS_CONSEC_MISSED_{2};
 
+  int NUM_HITS_REQ_{3};
+
+  int NUM_HITS_IN_GROUP_{4};
+
+  int NUM_GROUPS_REQ_ {4};
+
   double strip_position_resolution_{150.};
 
   int STRIPS_BACK_PER_LAYER_{60};
