@@ -67,6 +67,7 @@ class HcalMIPTracking(ldmxcfg.Producer) :
         self.BACK_HCAL_START_Z_ = 840.
         self.MIP_MIN_PE_ = 36.
         self.MIP_MAX_PE_ = 900.
+        self.MIP_MAX_PE_ = 9000.
         self.MIN_TRACK_HITS_ = 4
         self.MIN_SEED_HITS_ = 3
         self.MAX_SEED_HIT_ERROR_ = 300.
@@ -76,6 +77,8 @@ class HcalMIPTracking(ldmxcfg.Producer) :
         self.NUM_HITS_REQ_ = 3
         self.NUM_HITS_IN_GROUP_ = 4
         self.NUM_GROUPS_REQ_ = 4
+        self.NUM_GROUPS_PER_LAY_ = 5
+        self.NUM_LAY_PER_GROUP_ = 2
 
         digiprod = HcalDigiProducer()
 

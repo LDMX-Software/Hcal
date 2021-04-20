@@ -49,7 +49,9 @@ class HcalMIPTracking : public framework::Producer {
 
   double MIP_MIN_PE_{36.};
 
-  double MIP_MAX_PE_{900.};
+  //double MIP_MAX_PE_{900.};
+
+  double MIP_MAX_PE_{9000.};
 
   int MIN_TRACK_HITS_{4};
 
@@ -66,6 +68,10 @@ class HcalMIPTracking : public framework::Producer {
   int NUM_HITS_IN_GROUP_{4};
 
   int NUM_GROUPS_REQ_ {4};
+
+  int NUM_GROUPS_PER_LAY_{5};
+
+  int NUM_LAY_PER_GROUP_{2};
 
   double strip_position_resolution_{150.};
 
@@ -101,7 +107,9 @@ class HcalMIPTracking : public framework::Producer {
 
   bool IsTriggered(std::map<int, std::vector<ldmx::HcalHit>> &hitmap);
 
-  std::vector<int> TriggeredLayers(std::map<int, std::vector<ldmx::HcalHit>> &hitmap);
+  //std::vector<int> TriggeredLayers(std::map<int, std::vector<ldmx::HcalHit>> &hitmap);
+
+  std::vector<int> TriggeredLayers(std::vector<ldmx::HcalHit> &hits);
 
   float vectorMean(std::vector<float>& vec);
 

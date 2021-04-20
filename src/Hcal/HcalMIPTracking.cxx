@@ -13,9 +13,7 @@
 /*
 TODO:
 Calculate Covariances correctly
-Incorporate Side Hcal
 Fix same hits
-Update Event cxx File
 */
 
 namespace hcal {
@@ -37,6 +35,8 @@ void HcalMIPTracking::configure(framework::config::Parameters& parameters) {
   NUM_HITS_REQ_ = parameters.getParameter<int>("NUM_HITS_REQ_");
   NUM_HITS_IN_GROUP_ = parameters.getParameter<int>("NUM_HITS_IN_GROUP_");
   NUM_GROUPS_REQ_ = parameters.getParameter<int>("NUM_GROUPS_REQ_");
+  NUM_LAY_PER_GROUP_  = parameters.getParameter<int>("NUM_LAY_PER_GROUP_");
+  NUM_GROUPS_PER_LAY_  = parameters.getParameter<int>("NUM_GROUPS_PER_LAY_");
 
   STRIPS_BACK_PER_LAYER_ = parameters.getParameter<int>("strips_back_per_layer");
   NUM_BACK_HCAL_LAYERS_ = parameters.getParameter<int>("num_back_hcal_layers");
@@ -54,10 +54,11 @@ void HcalMIPTracking::produce(framework::Event& event) {
 
     std::map<int, std::vector<ldmx::HcalHit>> hcalIsoSortedHits;
 
-    for (const ldmx::HcalHit &hit : hcalIsoHits ) {
+    //for (const ldmx::HcalHit &hit : hcalIsoHits ) {
+    for (const ldmx::HcalHit &hit : hcalHits ) {
       ldmx::HcalID detID(hit.getID());
       int layer = detID.getLayerID();
-      int n = layer - 1;
+      int n = layer;// - 1;
       if(hcalIsoSortedHits.count(n) < 1){
         std::vector<ldmx::HcalHit> temp;
         temp.push_back(hit);
@@ -68,81 +69,17 @@ void HcalMIPTracking::produce(framework::Event& event) {
       }
     }
 
-    bool trigger = IsTriggered(hcalIsoSortedHits);
-
-    std::vector<ldmx::HcalHit> hcalIsoSideHits = FindIsolatedSideHits(hcalHits, USE_ISOLATED_HITS_);
-    bool sidetrigger = false;
-    if(hcalIsoSideHits.size() > 0){
-      sidetrigger = true;
-    }
+    //bool trigger = IsTriggered(hcalIsoSortedHits);
 
     std::vector<std::vector<ldmx::HcalHit>> tracklist = FindTracks(hcalIsoSortedHits);
-    std::vector<ldmx::HcalHit> trackhits;
-
-    /*if(tracklist.size() < 1){
-      ldmx::HcalMIPTracks track;
-      track.setIsTriggered(trigger);
-      track.setNTracks(tracklist.size());
-      event.add("HcalMIPTracks", track);
-      return;
-    }*/
-
-    /*else if(tracklist.size() == 1){
-      trackhits = tracklist[0];
-    }
-
-    else if (tracklist.size() > 1){
-      int index = 0;
-      int i = 0;
-      int maximum = 0;
-      int firstlayer = 9999;
-      for(std::vector<ldmx::HcalHit> hits : tracklist){
-        ldmx::HcalID detID(hits[0].getID());
-        int layer = detID.getLayerID();
-        if(hits.size() > maximum){
-          index = i;
-          maximum = hits.size();
-          firstlayer = layer;
-        }
-        else if(hits.size() == maximum && layer < firstlayer){
-          index = i;
-          maximum = hits.size();
-          firstlayer = layer;
-        }
-        i++;
-      }
-      trackhits = tracklist[index];
-    }
-
-    ldmx::HcalMIPTracks track;
-    track.setMIPTrackHits(trackhits);
-    float *fit;
-    fit = fitTrackLS(trackhits);
-    track.setX(fit[0]);
-    track.setY(fit[1]);
-    track.setDX(fit[2]);
-    track.setDY(fit[3]);
-    track.setXX(fit[4]);
-    track.setXY(fit[5]);
-    track.setXDX(fit[6]);
-    track.setXDY(fit[7]);
-    track.setYY(fit[8]);
-    track.setYDX(fit[9]);
-    track.setYDY(fit[10]);
-    track.setDXDX(fit[11]);
-    track.setDXDY(fit[12]);
-    track.setDYDY(fit[13]);
-    track.setIsTriggered(trigger);
-    track.setNTracks(tracklist.size());
-    event.add("HcalMIPTracks", track);*/
 
     ldmx::HcalMIPTracks tracks;
     tracks.setNTracks(tracklist.size());
-    tracks.setIsTriggered(trigger);
-    tracks.setIsSideTriggered(sidetrigger);
-    std::vector<int> layers = TriggeredLayers(hcalIsoSortedHits);
+    std::vector<int> layers = TriggeredLayers(hcalHits);
     tracks.setTriggerStart(layers[0]);
     tracks.setTriggeredLayers(layers[1]);
+    bool trigger = layers[1] >= NUM_GROUPS_REQ_;
+    tracks.setIsTriggered(trigger);
     std::vector<ldmx::HcalMIPTrack> miptracks;
     for(std::vector<ldmx::HcalHit> trackhits : tracklist){
       ldmx::HcalMIPTrack track;
@@ -168,6 +105,68 @@ void HcalMIPTracking::produce(framework::Event& event) {
     tracks.setMIPTracks(miptracks);
     event.add("HcalMIPTracks", tracks);
     return;
+}
+
+//std::vector<int> HcalMIPTracking::TriggeredLayers(std::map<int, std::vector<ldmx::HcalHit>> &hitmap){
+std::vector<int> HcalMIPTracking::TriggeredLayers(std::vector<ldmx::HcalHit> &hits){
+
+  std::vector<float> temp;
+  for (int i = 0; i < NUM_GROUPS_PER_LAY_; i++){
+    temp.push_back(0);
+  }
+  std::vector<std::vector<float>> PEsum;
+  for (int i = 0; i < int(NUM_BACK_HCAL_LAYERS_ / NUM_LAY_PER_GROUP_); i++){
+    PEsum.push_back(temp);
+  }
+
+  for (const ldmx::HcalHit &hit : hits ) {
+    ldmx::HcalID detID(hit.getID());
+    int section = detID.getSection();
+    if(section != 0){
+      continue;
+    }
+    int strip = detID.getStrip();
+    int layer = detID.getLayerID();
+    int PE = hit.getPE();
+    int block = int(layer / NUM_LAY_PER_GROUP_);
+    int group = int(strip / (STRIPS_BACK_PER_LAYER_ / NUM_GROUPS_PER_LAY_));
+    PEsum[block][group] = PEsum[block][group] + PE;
+  }
+
+  std::vector<bool> triggeredlayer;
+  for (int i = 0; i < PEsum.size(); i++){
+    bool triggered = false;
+    for (int j = 0; j < PEsum[i].size(); j++){
+      if(PEsum[i][j] > MIP_MIN_PE_ && PEsum[i][j] < MIP_MAX_PE_){
+        triggered = true;
+        break;
+      }
+    }
+    triggeredlayer.push_back(triggered);
+  }
+  int nLay = 0;
+  int nLaymax = 0;
+  int start = -9999;
+  for (int i = 0; i < triggeredlayer.size(); i++){
+    if(triggeredlayer[i]){
+      nLay++;
+    }
+    else{
+      if(nLay > nLaymax){
+        nLaymax = nLay;
+        start = i - nLay;
+      }
+      nLay = 0;
+    }
+    if(i == triggeredlayer.size() - 1  && nLay > nLaymax){
+      nLaymax = nLay;
+      start = i - nLay;
+    }
+  }
+  std::vector<int> output;
+  output.push_back(start);
+  output.push_back(nLaymax);
+  return output;
 }
 
 std::vector<ldmx::HcalHit> HcalMIPTracking::FindIsolatedHits(std::vector<ldmx::HcalHit> &hits, bool &use_isolated){
@@ -196,52 +195,6 @@ std::vector<ldmx::HcalHit> HcalMIPTracking::FindIsolatedHits(std::vector<ldmx::H
       ldmx::HcalID detID2(hit2.getID());
       int section2 = detID2.getSection();
       if(section2 != 0){
-        continue;
-      }
-      int strip2 = detID2.getStrip();
-      int layer2 = detID2.getLayerID();
-      int PE2      = hit2.getPE();
-      if(PE2 < MIP_MIN_PE_ || PE2 > MIP_MAX_PE_){
-        continue;
-      }
-      if(layer == layer2 && std::abs(strip - strip2) <= 1){
-        isolated = false;
-        break;
-      }
-    }
-    if(isolated || !use_isolated){
-      isohits.push_back(hit);
-    }
-  }
-  return isohits;
-}
-
-std::vector<ldmx::HcalHit> HcalMIPTracking::FindIsolatedSideHits(std::vector<ldmx::HcalHit> &hits, bool &use_isolated){
-  std::vector<ldmx::HcalHit> isohits;
-  int i = 0;
-  for (const ldmx::HcalHit &hit : hits ) {
-    i++;
-    ldmx::HcalID detID(hit.getID());
-    int section = detID.getSection();
-    if(section == 0){
-      continue;
-    }
-    int strip = detID.getStrip();
-    int layer = detID.getLayerID();
-    int PE      = hit.getPE();
-    if(PE < MIP_MIN_PE_ || PE > MIP_MAX_PE_){
-      continue;
-    }
-    bool isolated = true;
-    int j = 0;
-    for (const ldmx::HcalHit &hit2 : hits ) {
-      j++;
-      if(i == j){ //This is the same hit
-        continue;
-      }
-      ldmx::HcalID detID2(hit2.getID());
-      int section2 = detID2.getSection();
-      if(section2 != section){
         continue;
       }
       int strip2 = detID2.getStrip();
@@ -531,40 +484,6 @@ bool HcalMIPTracking::IsTriggered(std::map<int, std::vector<ldmx::HcalHit>> &hit
     }
   }
   return false;
-}
-
-std::vector<int> HcalMIPTracking::TriggeredLayers(std::map<int, std::vector<ldmx::HcalHit>> &hitmap){
-  int trigger = 0;
-  int firsthit = -9999;
-  int nLay = -9999;
-  for (int i = 0; i < NUM_BACK_HCAL_LAYERS_; i++){
-    int nHits = 0;
-    if(hitmap.count(i) < 1){
-      continue;
-    }
-    else{
-      nHits++;
-    }
-    if(hitmap.count(i+1) > 0){
-      nHits++;
-    }
-    if(hitmap.count(i+2) > 0){
-      nHits++;
-    }
-    if(hitmap.count(i+3) > 0){
-      nHits++;
-    }
-    if(nHits >= 3 && firsthit < -9998){
-      firsthit = i;
-    }
-    if(nHits >= 3){
-      nLay = i + 3;
-    }
-  }
-  std::vector<int> output;
-  output.push_back(firsthit);
-  output.push_back(nLay);
-  return output;
 }
 
 float HcalMIPTracking::vectorMean(std::vector<float> &vec){
