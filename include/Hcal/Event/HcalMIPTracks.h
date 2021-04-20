@@ -37,15 +37,13 @@ class HcalMIPTracks {
 
   inline bool getIsTriggered() const { return isTriggered_; };
 
-  inline bool getIsSideTriggered() const { return isSideTriggered_; };
-
   //inline std::vector<ldmx::HcalHit> getMIPTrackHits() const { return trackHits_; };
 
-  inline float getNTracks() const { return nTracks_; };
+  inline int getNTracks() const { return nTracks_; };
 
-  inline float getTriggerStart() const { return startTrig_; };
+  inline int getTriggerStart() const { return startTrig_; };
 
-  inline float getTriggeredLayers() const { return nTrigLay_; };
+  inline int getTriggeredLayers() const { return nTrigLay_; };
 
   inline std::vector<ldmx::HcalMIPTrack> getMIPTracks() const { return mipTracks_; };
 
@@ -153,10 +151,6 @@ class HcalMIPTracks {
     isTriggered_ = isTriggered;
   }
 
-  inline void setIsSideTriggered(const bool& isSideTriggered = true) {
-    isSideTriggered_ = isSideTriggered;
-  }
-
   inline void setMIPTracks(std::vector<ldmx::HcalMIPTrack> mipTracks) {
     mipTracks_ = mipTracks;
   }
@@ -203,8 +197,6 @@ class HcalMIPTracks {
 
   /** Flag indicating whether the event passes the Hcal veto. */
   bool isTriggered_{false};
-
-  bool isSideTriggered_{false};
 
   ClassDef(HcalMIPTracks, 2);
 
