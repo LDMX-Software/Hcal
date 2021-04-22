@@ -23,7 +23,8 @@ class HcalDigiProducer(ldmxcfg.Producer) :
         self.strips_side_tb_per_layer = 12
         self.num_side_tb_hcal_layers = 28
         self.strips_back_per_layer = 60 # n strips correspond to 5 cm wide bars
-        self.num_back_hcal_layers = 96
+        #self.num_back_hcal_layers = 96
+        self.num_back_hcal_layers = 150
         self.super_strip_size = 1 # 1 = 5 cm readout, 2 = 10 cm readout, ...
         self.mev_per_mip = 4.66  # measured 1.4 MeV for a 6mm thick tile, so for 20mm bar = 1.4*20/6
         self.pe_per_mip = 68. # PEs per MIP at 1m (assume 80% attentuation of 1m)
@@ -66,8 +67,8 @@ class HcalMIPTracking(ldmxcfg.Producer) :
 
         self.BACK_HCAL_START_Z_ = 840.
         self.MIP_MIN_PE_ = 36.
-        self.MIP_MAX_PE_ = 900.
-        self.MIP_MAX_PE_ = 9000.
+        #self.MIP_MAX_PE_ = 900.
+        self.MIP_MAX_PE_ = 1800.
         self.MIN_TRACK_HITS_ = 4
         self.MIN_SEED_HITS_ = 3
         self.MAX_SEED_HIT_ERROR_ = 300.
