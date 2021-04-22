@@ -50,16 +50,67 @@ void HcalMIPTracking::produce(framework::Event& event) {
 
     std::vector<ldmx::HcalHit> hcalHits = event.getCollection<ldmx::HcalHit>("HcalRecHits");
 
-    std::vector<ldmx::HcalHit> hcalIsoHits = FindIsolatedHits(hcalHits, USE_ISOLATED_HITS_ );
+    //std::vector<ldmx::HcalHit> hcalIsoHits = FindIsolatedHits(hcalHits, USE_ISOLATED_HITS_ );
+
+    std::vector<ldmx::HcalHit> hcalIsoHits;
+
+    for (const ldmx::HcalHit &hit : hcalHits ) {
+      ldmx::HcalID detID(hit.getID());
+      int section = detID.getSection();
+      if(section != 0){
+        continue;
+      }
+      int layer = detID.getLayerID();
+      int n = layer - 1;
+      int PE      = hit.getPE();
+      if(PE < MIP_MIN_PE_ || PE > MIP_MAX_PE_){
+        continue;
+      }
+      hcalIsoHits.push_back(hit);
+    }
 
     std::map<int, std::vector<ldmx::HcalHit>> hcalIsoSortedHits;
 
+    //std::cout<<"New Event!"<<std::endl;
+
+    for(int i = 0; i < NUM_BACK_HCAL_LAYERS_; i++){
+      std::vector<ldmx::HcalHit> temp;
+      for (const ldmx::HcalHit &hit : hcalIsoHits ) {
+        ldmx::HcalID detID(hit.getID());
+        int section = detID.getSection();
+        if(section != 0){
+          continue;
+        }
+        int layer = detID.getLayerID();
+        int n = layer - 1;
+        int PE      = hit.getPE();
+        if(PE < MIP_MIN_PE_ || PE > MIP_MAX_PE_){
+          continue;
+        }
+        //std::cout<<"Index "<<i<<"  Layer "<<n<<std::endl;
+        if(i == n){
+          temp.push_back(hit);
+          //std::cout<<"Size "<<temp.size()<<std::endl;
+        }
+      }
+      hcalIsoSortedHits.insert(std::pair<int, std::vector<ldmx::HcalHit>>(i, temp));
+      //std::cout<<"Size "<<hcalIsoSortedHits[i].size()<<"  Count "<<hcalIsoSortedHits.count(i)<<std::endl;
+    }
+
     //for (const ldmx::HcalHit &hit : hcalIsoHits ) {
-    for (const ldmx::HcalHit &hit : hcalHits ) {
+    /*for (const ldmx::HcalHit &hit : hcalHits ) {
       ldmx::HcalID detID(hit.getID());
+      int section = detID.getSection();
+      if(section != 0){
+        continue;
+      }
       int layer = detID.getLayerID();
-      int n = layer;// - 1;
-      if(hcalIsoSortedHits.count(n) < 1){
+      int n = layer - 1;
+      int PE      = hit.getPE();
+      if(PE < MIP_MIN_PE_ || PE > MIP_MAX_PE_){
+        continue;
+      }
+      if(hcalIsoSortedHits[n].size() < 1){
         std::vector<ldmx::HcalHit> temp;
         temp.push_back(hit);
         hcalIsoSortedHits.insert(std::pair<int, std::vector<ldmx::HcalHit>>(n, temp));
@@ -67,7 +118,10 @@ void HcalMIPTracking::produce(framework::Event& event) {
       else{
         hcalIsoSortedHits[n].push_back(hit);
       }
-    }
+      std::cout<<"Layer "<<layer<<"  Size "<<hcalIsoSortedHits[n].size()<<std::endl;
+    }*/
+
+    //std::cout<<"pass 5"<<std::endl;
 
     //bool trigger = IsTriggered(hcalIsoSortedHits);
 
@@ -81,6 +135,7 @@ void HcalMIPTracking::produce(framework::Event& event) {
     bool trigger = layers[1] >= NUM_GROUPS_REQ_;
     tracks.setIsTriggered(trigger);
     std::vector<ldmx::HcalMIPTrack> miptracks;
+    //std::cout<<"pass 6"<<std::endl;
     for(std::vector<ldmx::HcalHit> trackhits : tracklist){
       ldmx::HcalMIPTrack track;
       track.setMIPTrackHits(trackhits);
@@ -102,6 +157,7 @@ void HcalMIPTracking::produce(framework::Event& event) {
       track.setDYDY(fit[13]);
       miptracks.push_back(track);
     }
+    //std::cout<<"pass 7"<<std::endl;
     tracks.setMIPTracks(miptracks);
     event.add("HcalMIPTracks", tracks);
     return;
@@ -109,6 +165,8 @@ void HcalMIPTracking::produce(framework::Event& event) {
 
 //std::vector<int> HcalMIPTracking::TriggeredLayers(std::map<int, std::vector<ldmx::HcalHit>> &hitmap){
 std::vector<int> HcalMIPTracking::TriggeredLayers(std::vector<ldmx::HcalHit> &hits){
+
+  //std::cout<<"pass 0"<<std::endl;
 
   std::vector<float> temp;
   for (int i = 0; i < NUM_GROUPS_PER_LAY_; i++){
@@ -118,6 +176,8 @@ std::vector<int> HcalMIPTracking::TriggeredLayers(std::vector<ldmx::HcalHit> &hi
   for (int i = 0; i < int(NUM_BACK_HCAL_LAYERS_ / NUM_LAY_PER_GROUP_); i++){
     PEsum.push_back(temp);
   }
+
+  //std::cout<<"pass 1"<<std::endl;
 
   for (const ldmx::HcalHit &hit : hits ) {
     ldmx::HcalID detID(hit.getID());
@@ -133,6 +193,8 @@ std::vector<int> HcalMIPTracking::TriggeredLayers(std::vector<ldmx::HcalHit> &hi
     PEsum[block][group] = PEsum[block][group] + PE;
   }
 
+  //std::cout<<"pass 2"<<std::endl;
+
   std::vector<bool> triggeredlayer;
   for (int i = 0; i < PEsum.size(); i++){
     bool triggered = false;
@@ -144,6 +206,9 @@ std::vector<int> HcalMIPTracking::TriggeredLayers(std::vector<ldmx::HcalHit> &hi
     }
     triggeredlayer.push_back(triggered);
   }
+
+  //std::cout<<"pass 3"<<std::endl;
+
   int nLay = 0;
   int nLaymax = 0;
   int start = -9999;
@@ -163,6 +228,9 @@ std::vector<int> HcalMIPTracking::TriggeredLayers(std::vector<ldmx::HcalHit> &hi
       start = i - nLay;
     }
   }
+
+
+  //std::cout<<"pass 4"<<std::endl;
   std::vector<int> output;
   output.push_back(start);
   output.push_back(nLaymax);
@@ -267,7 +335,7 @@ std::vector<std::vector<ldmx::HcalHit>> HcalMIPTracking::FindTracks(std::map<int
   std::vector<ldmx::HcalHit> rmhits;
   int nseeds = 0;
   for (int i = 0; i < NUM_BACK_HCAL_LAYERS_; i++){
-    if(hitmap.count(i) < 1){
+    if(hitmap[i].size() < 1){
       continue;
     }
 
@@ -292,7 +360,7 @@ std::vector<std::vector<ldmx::HcalHit>> HcalMIPTracking::FindTracks(std::map<int
       if(penalty > MAX_LAYERS_CONSEC_MISSED_){
         break;
       }
-      if(hitmap.count(j) < 1){
+      if(hitmap[j].size() < 1){
         penalty++;
         continue;
       }
@@ -458,7 +526,7 @@ bool HcalMIPTracking::IsTriggered(std::map<int, std::vector<ldmx::HcalHit>> &hit
   for (int i = 0; i < NUM_BACK_HCAL_LAYERS_; i++){
     int nHits = 0;
     for(int j = i; j < i+NUM_HITS_IN_GROUP_; j++){
-      if(hitmap.count(j) > 0){
+      if(hitmap[j].size() > 0){
         nHits++;
       }
       if(nHits >= NUM_HITS_REQ_){

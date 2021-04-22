@@ -51,7 +51,7 @@ class HcalMIPTracking : public framework::Producer {
 
   //double MIP_MAX_PE_{900.};
 
-  double MIP_MAX_PE_{9000.};
+  double MIP_MAX_PE_{1800.};
 
   int MIN_TRACK_HITS_{4};
 
