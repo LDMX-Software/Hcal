@@ -1,5 +1,7 @@
 
+
 #include "DetDescr/HcalID.h"  //creating unique hcal IDs
+
 #include "Framework/ConfigurePython.h"
 #include "Framework/EventProcessor.h"
 #include "Framework/Process.h"
@@ -35,7 +37,9 @@ static const double MeV_per_mV = PE_ENERGY / 5;  // 0.013 MeV/mV
  * "simulated" (input into digitizer) and the reconstructed
  * energy deposited output by reconstructor.
  *
+
  * NOTE: Currently Digitization not implemented for TOT mode
+
  */
 static const double MAX_ENERGY_ERROR_DAQ = 4 * PE_ENERGY;
 static const double MAX_ENERGY_PERCENT_ERROR_DAQ = 0.12;
@@ -48,9 +52,11 @@ static const double MAX_ENERGY_PERCENT_ERROR_DAQ = 0.12;
  * Comparing simulated position vs
  * reconstructed position along the bar for even/odd layers in the back Hcal.
  */
+
 static const double MAX_POSITION_ERROR_DAQ =
     50. / 2;  // mm // scintillator length/2
 static const double MAX_POSITION_PERCENT_ERROR_DAQ = 0.3;
+
 
 /**
  * Number of sim hits to create.
@@ -128,6 +134,7 @@ class HcalFakeSimHits : public framework::Producer {
   /**
    * Maximum energy to make a simulated hit for [MeV]
    */
+
   // Based on the current gain settings for the ADC readout mode
   // we will reach saturation ~ 20 MeV ~ 290 PEs
   const double maxEnergy_ = 200 * PE_ENERGY;  // ~ 13 MeV
@@ -136,6 +143,7 @@ class HcalFakeSimHits : public framework::Producer {
    * Minimum energy to make a sim hit for [MeV]
    * Needs to be above readout threshold (after internal HcalDigi's calculation)
    */
+
   const double minEnergy_ = 4 * PE_ENERGY;
   /**
    * The step between energies is calculated depending on the min, max energy
@@ -162,6 +170,7 @@ class HcalFakeSimHits : public framework::Producer {
 
     // We hard-code the position of one hit: back hcal, layer 1, strip 31
     // This real simHit position is obtained by looking at calorimeter
+
     // SimHits of a 4 GeV muon shoot through the beamline
     ldmx::HcalID id(0, 1, 31);
     pretendSimHits[0].setPosition(-6.70265, 3.70265, 879);  // mm
@@ -195,6 +204,7 @@ class HcalFakeSimHits : public framework::Producer {
  * - Only one sim hit per event
  * - Noise generation has been turned off
  */
+
 class HcalCheckReconstruction : public framework::Analyzer {
   // save ntuple? False by default because if ntuplizer is on, the HcalGeometry
   // test cannot be run
@@ -202,6 +212,7 @@ class HcalCheckReconstruction : public framework::Analyzer {
 
  public:
   HcalCheckReconstruction(const std::string &name, framework::Process &p)
+
       : framework::Analyzer(name, p) {}
   ~HcalCheckReconstruction() {}
 
@@ -227,12 +238,11 @@ class HcalCheckReconstruction : public framework::Analyzer {
   }
 
   void analyze(const framework::Event &event) final override {
-    const auto simHits =
-        event.getCollection<ldmx::SimCalorimeterHit>("HcalFakeSimHits");
-
+    const auto simHits = event.getCollection<ldmx::SimCalorimeterHit>("HcalFakeSimHits");
     REQUIRE(simHits.size() == 1);
 
     float truth_energy = simHits.at(0).getEdep();
+
 
     if (save_) {
       ntuple_.setVar<float>("SimEnergy", truth_energy);
@@ -241,6 +251,7 @@ class HcalCheckReconstruction : public framework::Analyzer {
       ntuple_.setVar<float>("SimZ", simHits.at(0).getPosition()[2]);
       ntuple_.setVar<float>("SimTime", simHits.at(0).getContrib(0).time);
     }
+
 
     const auto daqDigis{
         event.getObject<ldmx::HgcrocDigiCollection>("HcalDigis")};
@@ -253,6 +264,7 @@ class HcalCheckReconstruction : public framework::Analyzer {
       ntuple_.setVar<int>("DaqDigiADC", daqDigi.soi().adc_t());
       ntuple_.setVar<int>("DaqDigiTOT", daqDigi.tot());
     }
+
 
     const auto recHits = event.getCollection<ldmx::HcalHit>("HcalRecHits");
     CHECK(recHits.size() == 1);
@@ -295,11 +307,14 @@ class HcalCheckReconstruction : public framework::Analyzer {
       // comment position check for now
       // CHECK_THAT(rec_pos, isCloseEnough(truth_pos, MAX_POSITION_ERROR_DAQ,
       //                                 MAX_POSITION_PERCENT_ERROR_DAQ));
+
     }
 
     return;
   }
+
 };  // HcalCheckReconstruction
+
 
 }  // namespace test
 }  // namespace hcal
