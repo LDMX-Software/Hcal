@@ -9,6 +9,9 @@
 
 #include "Hcal/HcalReconConditions.h"
 
+#include "SimCore/Event/SimCalorimeterHit.h"
+#include "Hcal/Event/HcalHit.h"
+
 namespace hcal {
 
 HcalRecProducer::HcalRecProducer(const std::string& name,

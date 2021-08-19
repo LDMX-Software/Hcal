@@ -24,6 +24,7 @@
 #include "DetDescr/HcalID.h"
 #include "Framework/EventDef.h"
 #include "Framework/EventProcessor.h"
+#include "Recon/Event/HgcrocDigiCollection.h"
 
 //---------//
 //  ROOT   //
