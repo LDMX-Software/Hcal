@@ -48,6 +48,8 @@ class HcalHit : public ldmx::CalorimeterHit {
    * estimate.
    */
   float getPE() const { return pe_; }
+  float getPE_pos() const { return pe_pos_; }
+  float getPE_neg() const { return pe_neg_; }
 
   /**
    * Get the minimum number of photoelectrons estimated for this hit if two
@@ -63,6 +65,8 @@ class HcalHit : public ldmx::CalorimeterHit {
    * estimate.
    */
   void setPE(float pe) { pe_ = pe; }
+  void setPE_pos(float pe_pos) { pe_pos_ = pe_pos; }
+  void setPE_neg(float pe_neg) { pe_neg_ = pe_neg; }
 
   /**
    * Set the minimum number of photoelectrons estimated for this hit.
@@ -74,6 +78,8 @@ class HcalHit : public ldmx::CalorimeterHit {
  private:
   /** The number of PE estimated for this hit. */
   float pe_{0};
+  float pe_pos_{0};
+  float pe_neg_{0};
 
   /** The minimum number of PE estimated for this hit, different from pe_ when
    * you have two ended readout */

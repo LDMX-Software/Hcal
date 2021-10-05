@@ -161,6 +161,8 @@ void HcalRecProducer::produce(framework::Event& event) {
 
     // get the estimated voltage and time from digi samples
     double voltage(0.);
+    double voltage_pos(0.);
+    double voltage_neg(0.);
     double voltage_min(0.);
     double hitTime(0.);
 
@@ -246,6 +248,8 @@ void HcalRecProducer::produce(framework::Event& event) {
       // set voltage
       voltage = (voltage_posend / att_posend + voltage_negend / att_negend) /
                 2;  // mV
+      voltage_pos = voltage_posend / att_posend;
+      voltage_neg = voltage_negend / att_negend;
       voltage_min =
           std::min(voltage_posend / att_posend, voltage_negend / att_negend);
 
@@ -299,7 +303,8 @@ void HcalRecProducer::produce(framework::Event& event) {
       // set voltage
       voltage = voltage_i / att;
       voltage_min = voltage_i / att;
-
+      voltage_pos = voltage/2;
+      voltage_neg = voltage/2;
       // get TOA
       double TOA =
           getTOA(digi_posend, the_conditions.adcPedestal(id_posend), iSOI);
@@ -313,22 +318,33 @@ void HcalRecProducer::produce(framework::Event& event) {
       iDigi++;
     }  // end single readout loop
 
+    printf("voltage_pos: %lf\tvoltage_neg: %lf\t", voltage_pos, voltage_neg);
     double num_mips_equivalent = voltage / voltage_per_mip_;
+    double num_mips_equivalent_pos = voltage_pos / voltage_per_mip_;
+    double num_mips_equivalent_neg = voltage_neg / voltage_per_mip_;
+    printf("voltage: %lf\t", voltage);
     double energy_deposited = num_mips_equivalent * mip_energy_;
 
     // TODO: need to incorporate corrections if necessary
     double reconstructed_energy = energy_deposited;
 
     int PEs = num_mips_equivalent * pe_per_mip_;
+    int PEs_pos = num_mips_equivalent_pos * pe_per_mip_;
+    int PEs_neg = num_mips_equivalent_neg * pe_per_mip_;
+    printf("num_mips_equivalent: %lf\t", num_mips_equivalent);
     int minPEs = (voltage_min / voltage_per_mip_) * pe_per_mip_;
 
     // copy over information to rec hit structure in new collection
-    ldmx::HcalHit recHit;
+    ldmx::HcalHit recHit; // ##### WHERE IS THIS #####
     recHit.setID(id.raw());
     recHit.setXPos(position.X());
     recHit.setYPos(position.Y());
     recHit.setZPos(position.Z());
     recHit.setPE(PEs);
+    recHit.setPE_pos(PEs_pos);
+    recHit.setPE_neg(PEs_neg);
+    printf("PE: %d\t", PEs);
+    printf("PE_pos: %d\tPE_neg: %d\tPE_ave: %d\tdiff: %d \n", PEs_pos, PEs_neg, (PEs_pos+PEs_neg)/2, PEs-(PEs_pos+PEs_neg)/2);
     recHit.setMinPE(minPEs);
     recHit.setAmplitude(amplT_posend);
     recHit.setEnergy(energy_deposited);
