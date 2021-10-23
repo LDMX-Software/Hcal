@@ -93,7 +93,7 @@ HcalDetectorMap::HcalDetectorMap(const std::string& connections_table, bool want
 
     auto QuadBar {csv.getInteger("QuadBar")};
     auto BarNumber {csv.getInteger("Bar")};
-    // Strip = (Bar - 1) + 4 * (QuadBar - 1)
+    // Strip = (4 - Bar) + 4 * (QuadBar - 1)
     // Bar and QuadBar both start at 1 so we need to subtract to get first value
     // to be zero
     auto strip { (4 - BarNumber) + 4 * (QuadBar - 1)};
