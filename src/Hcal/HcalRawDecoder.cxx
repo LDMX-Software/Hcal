@@ -268,7 +268,7 @@ void HcalRawDecoder::produce(framework::Event& event) {
 
           //std::cout << " : DAQ Channel ";
 
-          //std::cout << fpga << " " << roc_id-256 << " " << channel_id << " ";
+          //std::cout << fpga << " " << roc_id << " " << channel_id << " ";
           /**
            * The subfields for the electronics ID infrastructure need to start
            * from 0 and count up. This means we need to subtract some of the
@@ -279,8 +279,8 @@ void HcalRawDecoder::produce(framework::Event& event) {
            *  roc_id-256 is the ssame as i_link = is this a coincidence?
            *  or should we change the second input to be the link index
            */
-          ldmx::HcalElectronicsID eid(fpga-1, roc_id-256, channel_id);
-          //std::cout << eid.index();
+          ldmx::HcalElectronicsID eid(fpga-5, roc_id-1280, channel_id-1);
+          //std::cout << eid.index() << std::endl;
 
           // copy data into EID->sample map
           eid_to_samples[eid].emplace_back(w);
