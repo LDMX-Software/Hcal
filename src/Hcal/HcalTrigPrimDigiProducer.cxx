@@ -33,6 +33,12 @@ void HcalTrigPrimDigiProducer::produce(framework::Event& event) {
   // construct the calculator...
   ldmx::HgcrocTriggerCalculations calc(conditions);
 
+  bool debug=false;
+  if(debug) std::cout << "\nNewEvent\n";
+
+  // TMP for cross-check only
+  ldmx::CaloTrigPrimCollection debugDaqDigis;
+  
   // Loop over the digis
   for (unsigned int ix = 0; ix < hcalDigis.getNumDigis(); ix++) {
     const ldmx::HgcrocDigiCollection::HgcrocDigi pdigi = hcalDigis.getDigi(ix);
@@ -42,8 +48,11 @@ void HcalTrigPrimDigiProducer::produce(framework::Event& event) {
       int tot = 0;
       if (pdigi.soi().isTOTComplete()) tot = pdigi.soi().tot();
       calc.addDigi(pdigi.id(), tid.raw(), pdigi.soi().adc_t(), tot);
+      debugDaqDigis.push_back( ldmx::CaloTrigPrim(pdigi.id(), pdigi.soi().adc_t()));
+      if(debug) std::cout << "DAQ digi with ADC = " << pdigi.soi().adc_t() << std::endl;
     }
   }
+  event.add("debugHcalDaqDigis", debugDaqDigis);
 
   // Now, we compress the digis
   calc.compressDigis(4);
@@ -52,20 +61,21 @@ void HcalTrigPrimDigiProducer::produce(framework::Event& event) {
   // const std::map<unsigned int, uint8_t> results;
   const std::map<unsigned int, uint8_t>& results = calc.compressedEnergies();
   ldmx::HgcrocTrigDigiCollection tdigis;
-  // ldmx::CaloTrigPrimCollection tdigisUC; // sums without any compression
-  // applied
+  ldmx::CaloTrigPrimCollection tdigisUC; // sums w/o compression applied
 
   for (auto result : results) {
     if (result.second > 0) {
+      int uncompress = hgc_compress_factor*ldmx::HgcrocTrigDigi::compressed2Linear(result.second);
+      if(debug) std::cout << "TRIG digi with ADC = " << uncompress
+                          << " (compressed: "<<(unsigned int)(result.second)<<")" << std::endl;
       tdigis.push_back(ldmx::HgcrocTrigDigi(result.first, result.second));
-      // tdigisUC.push_back( ldmx::CaloTrigPrim(result.first,
-      //         hgc_compress_factor*ldmx::HgcrocTrigDigi::compressed2Linear(result.second))
-      //         );
+      tdigisUC.push_back( ldmx::CaloTrigPrim(result.first, uncompress));
     }
   }
 
-  // build STQs from the quads (w/ compressed energies)
-  stq_tps.clear();
+  // Form TriggerQuads from 4 CMS quads
+  //   (TODO: and compressed their energies)
+  trigQuadMap.clear();
   for (auto result : results) {
     if (result.second > 0) {
       const ldmx::HcalTriggerID quad_id(result.first);
@@ -80,29 +90,30 @@ void HcalTrigPrimDigiProducer::produce(framework::Event& event) {
                         "HcalTriggerID");
       }
       const ldmx::HcalDigiID prec_id(precisions_ids.front().raw());
-      const ldmx::HcalTriggerID stq_id = geom.belongsToSTQ(prec_id);
-      auto ptr = stq_tps.find(stq_id.raw());
+      const ldmx::HcalTriggerID trigQuad_id = geom.belongsToTrigQuad(prec_id);
+      auto ptr = trigQuadMap.find(trigQuad_id.raw());
       int linear_charge =
           hgc_compress_factor *
           ldmx::HgcrocTrigDigi::compressed2Linear(result.second);
-      if (ptr != stq_tps.end()) {
+      if (ptr != trigQuadMap.end()) {
         ptr->second += linear_charge;
       } else {
-        stq_tps[stq_id.raw()] = linear_charge;
+        trigQuadMap[trigQuad_id.raw()] = linear_charge;
       }
     }
   }
 
-  ldmx::CaloTrigPrimCollection stq_digis;
-  for (auto result : stq_tps) {
+  ldmx::CaloTrigPrimCollection trigQuads;
+  for (auto result : trigQuadMap) {
     if (result.second > 0) {
-      stq_digis.push_back(ldmx::CaloTrigPrim(result.first, result.second));
+      if(debug) std::cout << "TRIG quad with ADC = " << result.second << std::endl;
+      trigQuads.push_back(ldmx::CaloTrigPrim(result.first, result.second));
     }
   }
 
-  event.add(getName(), tdigis);
-  // event.add(getName()+"Uncompress", tdigisUC);
-  event.add("hcalTrigPrimDigiSTQs", stq_digis);
+  event.add(getName(), tdigis); // hcalTrigPrimDigis
+  event.add(getName()+"Uncompress", tdigisUC);
+  event.add("hcalOneEndedTrigQuads", trigQuads);
 }
 }  // namespace hcal
 DECLARE_PRODUCER_NS(hcal, HcalTrigPrimDigiProducer);

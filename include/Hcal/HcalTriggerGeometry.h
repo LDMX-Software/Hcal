@@ -34,7 +34,7 @@ namespace hcal {
      */
     std::vector<ldmx::HcalDigiID> contentsOfQuad(
         ldmx::HcalTriggerID triggerCell) const;
-    std::vector<ldmx::HcalDigiID> contentsOfSTQ(
+    std::vector<ldmx::HcalDigiID> contentsOfTrigQuad(
         ldmx::HcalTriggerID triggerCell) const;
 
     /**
@@ -42,7 +42,7 @@ namespace hcal {
      * null id if there is no such association.
      */
     ldmx::HcalTriggerID belongsToQuad(ldmx::HcalDigiID precisionCell) const;
-    ldmx::HcalTriggerID belongsToSTQ(ldmx::HcalDigiID precisionCell) const;
+    ldmx::HcalTriggerID belongsToTrigQuad(ldmx::HcalDigiID precisionCell) const;
 
  private:
     /** Reference to the Hcal geometry used for trigger geometry information */

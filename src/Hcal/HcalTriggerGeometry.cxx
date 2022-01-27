@@ -25,7 +25,7 @@ std::vector<ldmx::HcalDigiID> HcalTriggerGeometry::contentsOfQuad(
   return retval;
 }
 
-  std::vector<ldmx::HcalDigiID> HcalTriggerGeometry::contentsOfSTQ(
+  std::vector<ldmx::HcalDigiID> HcalTriggerGeometry::contentsOfTrigQuad(
     ldmx::HcalTriggerID triggerCell) const {
   std::vector<ldmx::HcalDigiID> retval;
   for(int iStrip=0;iStrip<8;iStrip++){
@@ -35,7 +35,8 @@ std::vector<ldmx::HcalDigiID> HcalTriggerGeometry::contentsOfQuad(
       int tlayer = triggerCell.layer();
       int player = 2*(tlayer+iStrip) - tlayer%2;
       if (player >= hcalGeometry_->getNumLayers(triggerCell.section())) continue;
-      retval.push_back(ldmx::HcalDigiID(triggerCell.section(), player,
+      // for some reason Hcal layers are indexed from 1...
+      retval.push_back(ldmx::HcalDigiID(triggerCell.section(), player+1,
                                         strip, triggerCell.end()));
     }
   }
@@ -48,12 +49,12 @@ ldmx::HcalTriggerID HcalTriggerGeometry::belongsToQuad(
                              precisionCell.strip()/4, precisionCell.end());
 }
 
-ldmx::HcalTriggerID HcalTriggerGeometry::belongsToSTQ(
+ldmx::HcalTriggerID HcalTriggerGeometry::belongsToTrigQuad(
     ldmx::HcalDigiID precisionCell) const {
   // 2x2 groups of quads, with "superlayers" like:
   // 0 1 0 1 2 3 2 3 ...
   // V H V H V H V H ...
-  int layer = precisionCell.layer();
+  int layer = precisionCell.layer()-1; // layers indexed from 1...
   int superlayer = 2*(layer / 4) + (layer % 4)%2;
   return ldmx::HcalTriggerID(precisionCell.section(), superlayer,
                              precisionCell.strip()/8, precisionCell.end());

@@ -47,7 +47,7 @@ namespace hcal {
     std::string condObjName_;
 
     /** map of digis to the super trigger primitives */
-    std::map<unsigned int, unsigned int> stq_tps;
+    std::map<unsigned int, unsigned int> trigQuadMap;
   };
 }  // namespace hcal
 
