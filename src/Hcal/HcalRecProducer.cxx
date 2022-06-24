@@ -10,7 +10,7 @@
 #include "Hcal/HcalReconConditions.h"
 
 namespace hcal {
-
+  
 HcalRecProducer::HcalRecProducer(const std::string& name,
                                  framework::Process& process)
     : Producer(name, process) {}
@@ -114,33 +114,46 @@ void HcalRecProducer::produce(framework::Event& event) {
       ldmx::HcalGeometry::CONDITIONS_OBJECT_NAME);
 
   // get the reconstruction parameters
-  HcalReconConditions the_conditions(
-      getCondition<conditions::DoubleTableCondition>(
-          HcalReconConditions::CONDITIONS_NAME));
+  const auto& the_conditions{getCondition<HcalReconConditions>(HcalReconConditions::CONDITIONS_NAME)};
 
   std::vector<ldmx::HcalHit> hcalRecHits;
   auto hcalDigis =
       event.getObject<ldmx::HgcrocDigiCollection>(digiCollName_, digiPassName_);
   int numDigiHits = hcalDigis.getNumDigis();
 
+  // group digis by the same HcalID
+  std::map<ldmx::HcalID, std::vector<int>> idigisByHcalID;
+  int iDigi = 0;
+  while (iDigi < numDigiHits) {
+    // get HcalID
+    auto digi = hcalDigis.getDigi(iDigi);
+    
+    ldmx::HcalDigiID id_digi(digi.id());
+    ldmx::HcalID id(id_digi.section(), id_digi.layer(), id_digi.strip());
+    
+    auto idh = idigisByHcalID.find(id);
+    if (idh == idigisByHcalID.end()) {
+      idigisByHcalID[id] = std::vector<int>(1, iDigi);
+    } else {
+      idh->second.push_back(iDigi);
+    }
+    iDigi++;
+  }
+
   // get sample of interest index
   unsigned int iSOI = hcalDigis.getSampleOfInterestIndex();
 
   // loop through digis
-  int iDigi = 0;
-  while (iDigi < numDigiHits) {
-    auto digi_posend = hcalDigis.getDigi(iDigi);
-
-    // ID from first digi sample (which should be in positive end)
-    ldmx::HcalDigiID id_posend(digi_posend.id());
-    ldmx::HcalID id(id_posend.section(), id_posend.layer(), id_posend.strip());
-
+  for (auto const& digi : idigisByHcalID){
+    // HcalID
+    auto id = digi.first;
+    
     // position from ID
     auto position = hcalGeometry.getStripCenterPosition(id);
     double half_total_width = hcalGeometry.getHalfTotalWidth(id.section(),id.layer());
     double ecal_dx = hcalGeometry.getEcalDx();
     double ecal_dy = hcalGeometry.getEcalDy();
-
+    
     // compute distance to the end of the bar
     // for back Hcal, we take the half of the bar
     // for side Hcal, we take the length of the bar (2*half-width)-Ecal_dxy as
@@ -163,16 +176,31 @@ void HcalRecProducer::produce(framework::Event& event) {
     double voltage(0.);
     double voltage_min(0.);
     double hitTime(0.);
-
     double amplT(0.);
-    double amplT_posend(0.), amplTm1_posend(0.);
-    double amplT_negend(0.), amplTm1_negend(0.);
-
+    
     // double readout
     if (id.section() == ldmx::HcalID::HcalSection::BACK) {
-      auto digi_negend = hcalDigis.getDigi(iDigi + 1);
+      if (digi.second.size()<2){
+	std::cout << "WARNING:Back Section does not have two digis " << std::endl;
+	continue;
+      }
+
+      // sort digis by raw id
+      std::vector<int> idigis = digi.second;
+      std::sort(idigis.begin(), idigis.end(),
+		[& hcalDigis](int &lhs, int &rhs) {
+		  return hcalDigis.getDigi(lhs).id() <  hcalDigis.getDigi(rhs).id();
+		});
+      
+      auto digi_posend = hcalDigis.getDigi(idigis.at(0));
+      auto digi_negend = hcalDigis.getDigi(idigis.at(1));
+
+      ldmx::HcalDigiID id_posend(digi_posend.id());
       ldmx::HcalDigiID id_negend(digi_negend.id());
 
+      double amplT_posend(0.), amplTm1_posend(0.);
+      double amplT_negend(0.), amplTm1_negend(0.);
+      
       double voltage_posend, voltage_negend;
       double amplT_posend_copy, amplT_negend_copy;
       if (digi_posend.isTOT()) {
@@ -265,12 +293,14 @@ void HcalRecProducer::produce(framework::Event& event) {
       // polysterene?
       hitTime = fabs(TOA_posend + TOA_negend) / 2;  // ns
 
-      iDigi += 2;
     }       // end double readout loop
     else {  // single readout
+      auto digi_single = hcalDigis.getDigi(digi.second.at(0));
+      ldmx::HcalDigiID id_single(digi_single.id());
 
-      double voltage_i;
-      if (digi_posend.isTOT()) {
+      double voltage_single;
+      double amplT_single, amplTm1_single;
+      if (digi_single.isTOT()) {
         // TOT - number of clock ticks that pulse was over threshold
         // this is related to the amplitude of the pulse approximately through a
         // linear drain rate the amplitude of the pulse is related to the energy
@@ -279,37 +309,37 @@ void HcalRecProducer::produce(framework::Event& event) {
         // convert the time over threshold into a total energy deposited in the
         // bar (time over threshold [ns] - pedestal) * gain
 
-        voltage_i =
-            (digi_posend.tot() - the_conditions.totPedestal(id_posend)) *
-            the_conditions.totGain(id_posend);
+        voltage_single =
+            (digi_single.tot() - the_conditions.totPedestal(id_single)) *
+            the_conditions.totGain(id_single);
 
       } else {
         // ADC mode of readout
         // ADC - voltage measurement at a specific time of the pulse
-        amplT_posend =
-            digi_posend.soi().adc_t() - the_conditions.adcPedestal(id_posend);
-        amplTm1_posend =
-            digi_posend.soi().adc_tm1() - the_conditions.adcPedestal(id_posend);
-        voltage_i = amplT_posend * the_conditions.adcGain(id_posend);
+        amplT_single =
+            digi_single.soi().adc_t() - the_conditions.adcPedestal(id_single);
+        amplTm1_single =
+            digi_single.soi().adc_tm1() - the_conditions.adcPedestal(id_single);
+        voltage_single = amplT_single * the_conditions.adcGain(id_single);
       }
 
       // reverse voltage attenuation
       // for now, assume that position along the bar is the half_total_width
       double distance_end =
-          id_posend.isNegativeEnd() ? distance_negend : distance_posend;
+          id_single.isNegativeEnd() ? distance_negend : distance_posend;
       double att = exp(-1. * ((distance_end - fabs(half_total_width)) / 1000.) /
                        attlength_);
-
+      
       // set voltage
-      voltage = voltage_i;
-      voltage_min = voltage_i;
+      voltage = voltage_single;
+      voltage_min = voltage_single;
 
       // set amplitude (reverse attenuated)
-      amplT = amplT_posend / att;
+      amplT = amplT_single / att;
 
       // get TOA
       double TOA =
-          getTOA(digi_posend, the_conditions.adcPedestal(id_posend), iSOI);
+          getTOA(digi_single, the_conditions.adcPedestal(id_single), iSOI);
 
       // correct TOA
       TOA = correctionTOA_.Eval(amplT) - TOA;
@@ -317,7 +347,6 @@ void HcalRecProducer::produce(framework::Event& event) {
       // set hit time
       hitTime = TOA;  // ns
 
-      iDigi++;
     }  // end single readout loop
 
     double num_mips_equivalent = voltage / voltage_per_mip_;
