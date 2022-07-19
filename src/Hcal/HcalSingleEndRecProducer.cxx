@@ -82,22 +82,22 @@ std::tuple<double,double,int> HcalSingleEndRecProducer::extract_measurments(
 
     // tot logic
     sum_tot += digi.at(i_sample).tot();
-
+    
     // toa logic
     if (digi.at(i_sample).toa() > 0) {
       toa_startbx = digi.at(i_sample).toa() * (clock_cycle_ / 1024);
       toa_sample = i_sample;
     }
     if (digi.at(i_sample).adc_t() - pedestal > max_meas){
-      max_sample = i_sample;
       max_meas = digi.at(i_sample).adc_t() - pedestal;
+      max_sample = i_sample;
     }
   }
   // get toa w.r.t the peak
   double toa = (max_sample - toa_sample) * clock_cycle_ - toa_startbx;
   // get toa w.r.t the SOI
   toa += ((int)isoi_ - max_sample) * clock_cycle_;
-
+  
   return std::make_tuple(toa, sum_adc, sum_tot);
 }
   
@@ -167,9 +167,7 @@ void HcalSingleEndRecProducer::produce(framework::Event& event) {
     recHit.setAmplitude(num_mips_equivalent);
     recHit.setEnergy(reconstructed_energy);
     recHit.setTime(hitTime);
-    if(is_adc) {
-      recHit.setIsADC(1);
-    }
+    recHit.setIsADC(is_adc);
     hcalRecHits.push_back(recHit);
   }
 
