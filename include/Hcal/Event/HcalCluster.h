@@ -66,6 +66,10 @@ class HcalCluster {
    */
   void setNHits(int nHits) { nHits_ = nHits; }
 
+  void addStrips(const std::vector<int> stripsVec);
+
+  void setLayer(int layer) { layer_ = layer; }
+  
   /**
    * Sets a sorted vector for the IDs of the hits
    * that make up the cluster.
@@ -85,17 +89,31 @@ class HcalCluster {
     centroidZ_ = z;
   }
 
+  void setRMSXYZ(double xx, double yy, double zz) {
+    rmsX_ = xx;
+    rmsY_ = yy;
+    rmsZ_ = zz;
+  }
+
   void setTime(double x) { time_ = x; }
 
   double getEnergy() const { return energy_; }
 
   int getNHits() const { return nHits_; }
 
+  int getNStrips() const { return nStrips_; }
+
+  int getLayer() const { return layer_; }
+  
   double getCentroidX() const { return centroidX_; }
 
   double getCentroidY() const { return centroidY_; }
 
   double getCentroidZ() const { return centroidZ_; }
+
+  double getRMSX() const { return rmsX_; }
+  double getRMSY() const { return rmsY_; }
+  double getRMSZ() const { return rmsZ_; }
 
   double getTime() const { return time_; }
 
@@ -107,11 +125,17 @@ class HcalCluster {
 
  private:
   std::vector<unsigned int> hitIDs_;
+  std::vector<int> strips_;
   double energy_{0};
   int nHits_{0};
+  int nStrips_{0};
+  int layer_{0};
   double centroidX_{0};
   double centroidY_{0};
   double centroidZ_{0};
+  double rmsX_{0};
+  double rmsY_{0};
+  double rmsZ_{0};
   double time_{0};
 
   ClassDef(HcalCluster, 1);
