@@ -53,10 +53,10 @@ namespace hcal {
       if (isLocalMax && (hit.e > seed_threshold) && !hit.used){
 	hit.used=true;
 
-	if(debug) {
-	  cout << "local max " << endl;
-	  hit.Print();
-	}
+	// if(debug) {
+	//   cout << "local max " << endl;
+	//   hit.Print();
+	// }
 	
 	Cluster c;
 	c.hits.push_back( hit );
@@ -164,7 +164,7 @@ namespace hcal {
 	  auto hit=h;
 	  c.e += h.e;
 	  double energy = h.e;
-	  // float w = std::max(0., log(h.e/MIN_ENERGY)); // use log-e wgt
+	  // double w = std::max(0., log(h.e/MIN_ENERGY)); // use log-e wgt
 	  double w = std::max(0., energy);
 	  c.x += h.x * w;
 	  c.y += h.y * w;
@@ -244,7 +244,7 @@ namespace hcal {
 
     // sort 2d clusters by layer
     std::vector<std::vector<Cluster> > layer_clusters;
-    layer_clusters.resize(layer_max); // first 50 layers
+    //layer_clusters.resize(layer_max); // first 50 layers
     for(auto &clus : all_clusters){
       layer_clusters[clus.layer].push_back(clus);
     }
@@ -256,7 +256,7 @@ namespace hcal {
     if(debug){
       cout << "--------\n3d: sorted 2d inputs" << endl;
       for(auto &clusters : layer_clusters) 
-	for(auto &c : clusters) c.Print(g);
+	for(auto &c : clusters) c.Print();
     }
     
     // @TODO: pass clusters from layer 0 to end, starting with highest energy
@@ -265,7 +265,7 @@ namespace hcal {
 
     if(debug){
       cout << "--------\nFound 3d clusters" << endl;
-      for(auto &c : clusters3d) c.Print3d();
+      // for(auto &c : clusters3d) c.Print3d();
     }
     
   }

@@ -17,6 +17,7 @@ ClassImp(ldmx::HcalCluster)
     hitIDs_.clear();
     energy_ = 0;
     nHits_ = 0;
+    nStrips_ = 0;
     centroidX_ = 0;
     centroidY_ = 0;
     centroidZ_ = 0;
@@ -36,13 +37,14 @@ ClassImp(ldmx::HcalCluster)
   }
       
   void HcalCluster::addStrips(const std::vector<int> stripsVec) {
-    // add unique strips to a list
+    // add only unique strips to a list
     strips_.clear();
     for (auto strip : stripsVec) {
       if (!std::count(strips_.begin(), strips_.end(), strip)) {
 	strips_.push_back(strip);
       }
     }
+    nStrips_ = stripVec.size();
   }
       
 }  // namespace ldmx

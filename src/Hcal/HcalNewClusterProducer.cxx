@@ -9,7 +9,7 @@ void HcalNewClusterProducer::configure(framework::config::Parameters& p) {
   coll_name_ = p.getParameter("coll_name", coll_name_);
 
   cluster2d_coll_name_ = p.getParameter("cluster2d_coll_name", cluster2d_coll_name_);
-  cluster3d_coll_name_ = p.getParameter("cluster3d_coll_name", cluster_coll_name_);
+  cluster3d_coll_name_ = p.getParameter("cluster3d_coll_name", cluster3d_coll_name_);
 
   seed_threshold_ = p.getParameter("seed_threshold", seed_threshold_);
   neighbor_threshold_ = p.getParameter("neighbor_threshold", neighbor_threshold_);
