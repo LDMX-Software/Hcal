@@ -44,7 +44,7 @@ ClassImp(ldmx::HcalCluster)
 	strips_.push_back(strip);
       }
     }
-    nStrips_ = stripVec.size();
+    nStrips_ = stripsVec.size();
   }
       
 }  // namespace ldmx
