@@ -3,6 +3,7 @@
 
 #include <map>
 #include <vector>
+#include <numeric>
 #include <cmath>
 #include <iostream>
 #include <algorithm>
@@ -10,6 +11,7 @@
 #include "TVector3.h"
 
 #include "DetDescr/HcalID.h"
+#include "DetDescr/HcalGeometry.h"
 #include "Hcal/Event/HcalCluster.h"
 
 using std::cout;
@@ -21,9 +23,9 @@ namespace hcal {
   public:
     std::map<int, std::vector<int> > strip_neighbors; 
     std::map<int, std::vector<int> > layer_neighbors; 
-    
-    ClusterGeometry( std::map<ldmx::HcalID, TVector3> id_map );
-    
+
+    ClusterGeometry( ldmx::HcalGeometry hcalGeometry, int num_neighbors);
+      
     // add a strip neighbor
     void AddStripNeighbor(int id1, int id2) {
       if( strip_neighbors.count(id1) ) strip_neighbors[id1].push_back(id2);
@@ -64,6 +66,7 @@ namespace hcal {
     int section=-1;
     int strip=-1;
     bool used=false;
+
     void Print(){
       cout << "Hit ("
 	   << "e= " << e
@@ -96,6 +99,11 @@ namespace hcal {
     int layer=-1;
     int section=-1;
     
+    bool is2D=true;
+    int depth=0;
+    int first_layer=-1;
+    int last_layer=-1;
+    
     void Print() {
       cout << "Cluster ("
 	   << "e= " << e
@@ -103,7 +111,24 @@ namespace hcal {
 	   << ", x= " << x
 	   << ", y= " << y
 	   << ", z= " << z
+	   << ", layer= " << layer
 	   << ", nHit= " << hits.size()
+	   << ", avgStrip= " << accumulate(strips.begin(), strips.end(), 0.0) / strips.size()
+	   << ", seedStrip= " << strips.at(0)
+	   << ")" 
+	   << endl;
+    }
+
+    void Print3d(){
+      cout << "Cluster ("
+	   << "e= " << e
+	   << ", seed id=" << seed
+	   << ", x= " << x
+	   << ", y= " << y
+	   << ", z= " << z
+	   << ", n2dClus= " << clusters2d.size()
+	   << ", first_layer=" << first_layer
+	   << ", depth=" << depth
 	   << ")" 
 	   << endl;
     }
@@ -131,24 +156,27 @@ namespace hcal {
     bool debug = false;
 
     // energy thresholds (MeV)
-    int seed_threshold;
-    int neighbor_threshold;
+    int seed_threshold_;
+    int neighbor_threshold_;
     
     // number of neighboring strips
-    int num_neighbors;
+    int num_neighbors_;
+
+    int layer_max_ = 100;
 
     // min energy
-    double MIN_ENERGY = 0.5; // MeV
+    double MIN_ENERGY_ = 0.5; // MeV
 
     // Set thresholds and number of neighbors
-    void SetThresholds( double seed_threshold_, double neighbor_threshold_) {
-      seed_threshold = seed_threshold_;
-      neighbor_threshold = neighbor_threshold_;
+    void SetThresholds( double seed_threshold, double neighbor_threshold) {
+      seed_threshold_ = seed_threshold;
+      neighbor_threshold_ = neighbor_threshold;
     }
-    void SetNeighbors ( int num_neighbors_ ) {
-      num_neighbors = num_neighbors_;
+    void SetNeighbors ( int num_neighbors ) {
+      num_neighbors_ = num_neighbors;
     }
-    
+
+
     // add hit to all_hits
     void AddHit(ldmx::HcalHit h){
       Hit hit;

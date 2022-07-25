@@ -15,17 +15,19 @@ ClassImp(ldmx::HcalCluster)
 
   void HcalCluster::Clear() {
     hitIDs_.clear();
+    strips_.clear();
     energy_ = 0;
     nHits_ = 0;
-    nStrips_ = 0;
+    n2D_ = 0;
+    layer_ = 0;
+    depth_ = 0;
+    time_ = 0;
     centroidX_ = 0;
     centroidY_ = 0;
     centroidZ_ = 0;
     rmsX_ = 0;
     rmsY_ = 0;
     rmsZ_ = 0;
-    layer_ = 0;
-    strips_.clear();
   }
 
   void HcalCluster::addHits(const std::vector<const HcalHit *> hitsVec) {
@@ -44,7 +46,6 @@ ClassImp(ldmx::HcalCluster)
 	strips_.push_back(strip);
       }
     }
-    nStrips_ = stripsVec.size();
   }
       
 }  // namespace ldmx

@@ -21,13 +21,10 @@ void HcalNewClusterProducer::produce(framework::Event& event) {
   const auto& hcalGeometry = getCondition<ldmx::HcalGeometry>(
       ldmx::HcalGeometry::CONDITIONS_OBJECT_NAME);
 
-  const auto& conditions{
-      getCondition<HcalReconConditions>(HcalReconConditions::CONDITIONS_NAME)};
-
   auto hcalRecHits =
       event.getCollection<ldmx::HcalHit>(coll_name_, pass_name_);
 
-  ClusterGeometry clusterGeometry(hcalGeometry.getStripPositionMap());
+  ClusterGeometry clusterGeometry(hcalGeometry, num_neighbors_);
   
   ClusterBuilder builder;
   builder.SetThresholds( seed_threshold_, neighbor_threshold_);
@@ -35,8 +32,9 @@ void HcalNewClusterProducer::produce(framework::Event& event) {
   builder.SetClusterGeo( &clusterGeometry );
   for (auto const& h : hcalRecHits) builder.AddHit(h);
   builder.BuildClusters();
+  
   auto clusters_2d = builder.Get2DClusters();
-  //auto clusters_3d = builder.Get3DClusters();
+  auto clusters_3d = builder.Get3DClusters();
   
   std::vector<ldmx::HcalCluster> hcalClusters_2d, hcalClusters_3d;
   for (const auto &c : clusters_2d) {
@@ -46,24 +44,31 @@ void HcalNewClusterProducer::produce(framework::Event& event) {
     cluster.setCentroidXYZ(c.x,c.y,c.z);
     cluster.setRMSXYZ(c.xx,c.yy,c.zz);
     cluster.addStrips(c.strips);
+
     cluster.setLayer(c.layer);
+    
     hcalClusters_2d.push_back(cluster);
   }
   
   // add collection to event bus
   event.add(cluster2d_coll_name_, hcalClusters_2d);
 
-  // for (const auto &c : clusters_3d) {
-  //   ldmx::HcalCluster cluster;
-  //   cluster.setEnergy(c.e);
-  //   cluster.setNHits(c.hits.size());
-  //   cluster.setCentroidXYZ(c.x,c.y,c.z);
-  //   cluster.setRMSXYZ(c.xx,c.yy,c.zz);
-  //   cluster.addStrips(c.strips);
-  //   hcalClusters_3d.push_back(cluster);
-  // }
-  // // add collection to event bus
-  // event.add(cluster3d_coll_name_, hcalClusters_3d);
+  for (const auto &c : clusters_3d) {
+    ldmx::HcalCluster cluster;
+    cluster.setEnergy(c.e);
+    cluster.setNHits(c.hits.size());
+    cluster.setCentroidXYZ(c.x,c.y,c.z);
+    cluster.setRMSXYZ(c.xx,c.yy,c.zz);
+    cluster.addStrips(c.strips);
+    
+    cluster.setDepth(c.depth);
+    cluster.setN2DClusters(c.clusters2d.size());
+    cluster.setLayer(c.first_layer);
+    
+    hcalClusters_3d.push_back(cluster);
+  }
+  // add collection to event bus
+  event.add(cluster3d_coll_name_, hcalClusters_3d);
 
 }
 

@@ -66,9 +66,17 @@ class HcalCluster {
    */
   void setNHits(int nHits) { nHits_ = nHits; }
 
+  /**
+   * Sets total number of 2d clusters.
+   * @param nClusters
+   */
+  void setN2DClusters(int n2d) { n2D_ = n2d; }
+  
+  /**
+   * Adds strips to the cluster
+   * @param stripsVec Vector of strips
+   */
   void addStrips(const std::vector<int> stripsVec);
-
-  void setLayer(int layer) { layer_ = layer; }
   
   /**
    * Sets a sorted vector for the IDs of the hits
@@ -95,30 +103,47 @@ class HcalCluster {
     rmsZ_ = zz;
   }
 
+  void setLayer(int layer) { layer_ = layer; }
+  
   void setTime(double x) { time_ = x; }
 
+  void setDepth(double d) { depth_ = d; }
+  
+  /////////////////////////////////////////////
+
+  // energy of cluster
   double getEnergy() const { return energy_; }
 
+  // number of hits - equivalent to number of strips
   int getNHits() const { return nHits_; }
 
-  int getNStrips() const { return nStrips_; }
+  // number of 2d clusters (for 3d clusters)
+  int getN2DClusters() const { return n2D_; }
 
+  // get layer (for 2d clusters)
+  // or seedlayer (for 3d clusters)
   int getLayer() const { return layer_; }
   
+  // position (weighted by energy)
   double getCentroidX() const { return centroidX_; }
-
   double getCentroidY() const { return centroidY_; }
-
   double getCentroidZ() const { return centroidZ_; }
-
   double getRMSX() const { return rmsX_; }
   double getRMSY() const { return rmsY_; }
   double getRMSZ() const { return rmsZ_; }
 
+  // time (unused)
   double getTime() const { return time_; }
 
+  // depth or number of layers in cluster (for 3d clusters)
+  double getDepth() const { return depth_; }
+
+  // get hit rawIDs (unused)
   const std::vector<unsigned int>& getHitIDs() const { return hitIDs_; }
 
+  // get strips
+  const std::vector<int>& getStrips() const { return strips_; }
+  
   bool operator<(const HcalCluster& rhs) const {
     return this->getEnergy() < rhs.getEnergy();
   }
@@ -128,7 +153,7 @@ class HcalCluster {
   std::vector<int> strips_;
   double energy_{0};
   int nHits_{0};
-  int nStrips_{0};
+  int n2D_{0};
   int layer_{0};
   double centroidX_{0};
   double centroidY_{0};
@@ -137,6 +162,7 @@ class HcalCluster {
   double rmsY_{0};
   double rmsZ_{0};
   double time_{0};
+  double depth_{0};
 
   ClassDef(HcalCluster, 1);
 };
