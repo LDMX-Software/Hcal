@@ -22,24 +22,23 @@ namespace hcal {
 	}
 	if (fabs(id1.layer() - id2.layer()) == 1) {
 	  // cout << "neigh layers, x,y,strip1 " <<  pos1.X() << " " << pos1.Y() << " " << id1.strip() << " x,y,strip2 " << pos2.X() << " " << pos2.Y() << " " << id2.strip() << endl;
+	  // consider all neighboring strips in the map
 	  float d = 0;
 	  if (hcalGeometry.layerIsHorizontal(id1.layer())) {
-	    // if a layer is horizontal, compute xy distance
-	    d = fabs(pos1.Y() - pos2.X());
-	    // cout << "layer1 horizontal " << d << endl;
+	    // if a layer is horizontal, compute x distance
+	     d = fabs(pos1.X() - pos2.X());
 	  }
 	  else {
-	    d = fabs(pos1.X() - pos2.Y());
-	    // cout << "layer2 horizontal " << d << endl;
+	    d = fabs(pos1.Y() - pos2.Y());
 	  }
-	  //if ( d <= num_neighbors*50*2) { // take four strips as possible distance ...
-	  if ( fabs(id1.strip() - id2.strip()) <= num_neighbors) {
-	    // cout << "strips " <<  id1.strip() << " " << id2.strip() << endl;
+	  // width of scintillator is 50mm
+	  if ( d <= num_neighbors*50*2) {
 	    AddLayerNeighbor(id1.raw(), id2.raw());
 	  }
 	}
-      }
-    }
+	
+      } // end loop over pair2
+    } // end loop over pair1
     
   }
   
@@ -70,7 +69,7 @@ namespace hcal {
 	}
       }
       
-      if (isLocalMax && (hit.e > seed_threshold_) && !hit.used){
+      if (isLocalMax && (hit.e > seed_threshold_2d_) && !hit.used){
 	hit.used=true;
 
 	// if(debug) {
@@ -114,7 +113,7 @@ namespace hcal {
 	  for(auto n : geom->strip_neighbors[hit.rawid]){
 	    if(hits_by_id.count(n) && 
 	       !hits_by_id[n].used && 
-	       hits_by_id[n].e > neighbor_threshold_ ){
+	       hits_by_id[n].e > neighbor_threshold_2d_ ){
 	      neighbors.push_back(n);
 	      unused_hits ++;
 	    }
@@ -294,7 +293,7 @@ namespace hcal {
       // derived from the first available cluster in each layer
 	
       int layer_showermax = -1;
-      double e_showermax = -1;
+      double e_showermax = seed_threshold_3d_;
       for(auto &clusters : layer_clusters) {
 	if(clusters.size() > 0){
 	  if(clusters.at(0).e > e_showermax) {
@@ -341,13 +340,25 @@ namespace hcal {
 	  cout << "look at clusters in layer " << test_layer << endl;
 	
 	for(int iclus2d=0; iclus2d<clusters2d.size(); iclus2d++){
-	  // check if 2d seed is neighboring
+
 	  auto &seed2d = clusters2d[iclus2d].seed;
-	  if(!geom->CheckLayerNeighbor(last_seed2d,seed2d) && debug){
-	    cout << "  -- " << iclus2d << " seed " << seed2d << endl; 
-	    cout << " not neigh " << endl;
-	    clusters2d[iclus2d].Print();
+
+	  // require an energy threshold for the 2d clusters
+	  if( clusters2d[iclus2d].e <= neighbor_threshold_3d_ )
+	    continue;
+	  
+	  // check if 2d seed is neighboring
+	  // decided on dx and dy distances if TOA info is not used
+	  // or full dr = sqrt(dx^2+dy^2) if TOA info is used
+	  auto &seed2d = clusters2d[iclus2d].seed;
+	  if(!geom->CheckLayerNeighbor(last_seed2d,seed2d)) {
+	    if(debug){
+	      cout << "  -- " << iclus2d << " seed " << seed2d << endl; 
+	      cout << " not neigh " << endl;
+	      clusters2d[iclus2d].Print();
+	    }
 	  }
+	  
 	  if(last_seed2d==seed2d || 
 	     geom->CheckLayerNeighbor(last_seed2d,seed2d)){
 	    

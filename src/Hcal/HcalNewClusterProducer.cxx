@@ -11,8 +11,10 @@ void HcalNewClusterProducer::configure(framework::config::Parameters& p) {
   cluster2d_coll_name_ = p.getParameter("cluster2d_coll_name", cluster2d_coll_name_);
   cluster3d_coll_name_ = p.getParameter("cluster3d_coll_name", cluster3d_coll_name_);
 
-  seed_threshold_ = p.getParameter("seed_threshold", seed_threshold_);
-  neighbor_threshold_ = p.getParameter("neighbor_threshold", neighbor_threshold_);
+  seed_threshold_2d_ = p.getParameter("seed_threshold_2d", seed_threshold_2d_);
+  neighbor_threshold_2d_ = p.getParameter("neighbor_threshold_2d", neighbor_threshold_2d_);
+  seed_threshold_3d_ = p.getParameter("seed_threshold_3d", seed_threshold_3d_);
+  neighbor_threshold_3d_ = p.getParameter("neighbor_threshold_3d", neighbor_threshold_3d_);
   num_neighbors_ = p.getParameter("num_neighbors", num_neighbors_);
   
 }
@@ -27,7 +29,8 @@ void HcalNewClusterProducer::produce(framework::Event& event) {
   ClusterGeometry clusterGeometry(hcalGeometry, num_neighbors_);
   
   ClusterBuilder builder;
-  builder.SetThresholds( seed_threshold_, neighbor_threshold_);
+  builder.SetThresholds2D( seed_threshold_2d_, neighbor_threshold_2d,);
+  builder.SetThresholds3D( seed_threshold_3d_, neighbor_threshold_3d,);
   builder.SetNeighbors( num_neighbors_ );
   builder.SetClusterGeo( &clusterGeometry );
   for (auto const& h : hcalRecHits) builder.AddHit(h);

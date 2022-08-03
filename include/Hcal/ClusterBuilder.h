@@ -156,12 +156,15 @@ namespace hcal {
     bool debug = false;
 
     // energy thresholds (MeV)
-    int seed_threshold_;
-    int neighbor_threshold_;
+    double seed_threshold_2d_;
+    double neighbor_threshold_2d_;
+    double seed_threshold_3d_;
+    double neighbor_threshold_3d_;
     
     // number of neighboring strips
     int num_neighbors_;
 
+    // maximum number of layers for a 3d cluster
     int layer_max_ = 100;
 
     // min energy

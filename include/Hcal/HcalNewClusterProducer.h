@@ -19,10 +19,12 @@ class HcalNewClusterProducer : public framework::Producer {
   /// name of 3d clusters to reconstruct
   std::string cluster3d_coll_name_{"Hcal3DClusters"};
 
-  /// energy threshold for 2D seed
-  double seed_threshold_;
-  /// energy threshold for 2D neighbors
-  double neighbor_threshold_;
+  /// energy threshold for 2D/3D seed
+  double seed_threshold_2d_;
+  double seed_threshold_3d_;
+  /// energy threshold for 2D/3D neighbors
+  double neighbor_threshold_2d_;
+  double neighbor_threshold_3d_;
   /// number of 2D neighbors
   int num_neighbors_;
   
