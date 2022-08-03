@@ -29,8 +29,8 @@ void HcalNewClusterProducer::produce(framework::Event& event) {
   ClusterGeometry clusterGeometry(hcalGeometry, num_neighbors_);
   
   ClusterBuilder builder;
-  builder.SetThresholds2D( seed_threshold_2d_, neighbor_threshold_2d);
-  builder.SetThresholds3D( seed_threshold_3d_, neighbor_threshold_3d);
+  builder.SetThresholds2D( seed_threshold_2d_, neighbor_threshold_2d_);
+  builder.SetThresholds3D( seed_threshold_3d_, neighbor_threshold_3d_);
   builder.SetNeighbors( num_neighbors_ );
   builder.SetClusterGeo( &clusterGeometry );
   for (auto const& h : hcalRecHits) builder.AddHit(h);
