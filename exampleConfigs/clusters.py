@@ -21,8 +21,8 @@ import LDMX.Hcal.cluster as hcal_cluster
 clusters = hcal_cluster.HcalNewClusterProducer()
 clusters.seed_threshold_2d = 0.1 # MeV
 clusters.neighbor_threshold_2d = 0.01 # MeV
-clusters.seed_threshold_3d  = 4 # MeV
-clusters.neighbor_threshold_2d = 1 # MeV
+clusters.seed_threshold_3d  = 4. # MeV
+clusters.neighbor_threshold_2d = 1. # MeV
 clusters.num_neighbors = 4 # number of neighboring strips
 
 p.sequence = [clusters]

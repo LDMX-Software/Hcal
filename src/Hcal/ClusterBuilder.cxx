@@ -26,7 +26,7 @@ namespace hcal {
 	  float d = 0;
 	  if (hcalGeometry.layerIsHorizontal(id1.layer())) {
 	    // if a layer is horizontal, compute x distance
-	     d = fabs(pos1.X() - pos2.X());
+	    d = fabs(pos1.X() - pos2.X());
 	  }
 	  else {
 	    d = fabs(pos1.Y() - pos2.Y());
@@ -303,7 +303,7 @@ namespace hcal {
 	}
       }
 
-      if (e_showermax==-1)
+      if (layer_showermax==-1)
 	break;
 
       if(debug) 
