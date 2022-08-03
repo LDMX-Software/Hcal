@@ -171,9 +171,13 @@ namespace hcal {
     double MIN_ENERGY_ = 0.5; // MeV
 
     // Set thresholds and number of neighbors
-    void SetThresholds( double seed_threshold, double neighbor_threshold) {
-      seed_threshold_ = seed_threshold;
-      neighbor_threshold_ = neighbor_threshold;
+    void SetThresholds2D( double seed_threshold, double neighbor_threshold) {
+      seed_threshold_2d_ = seed_threshold;
+      neighbor_threshold_2d_ = neighbor_threshold;
+    }
+    void SetThresholds3D( double seed_threshold, double neighbor_threshold) {
+      seed_threshold_3d_ = seed_threshold;
+      neighbor_threshold_3d_ = neighbor_threshold;
     }
     void SetNeighbors ( int num_neighbors ) {
       num_neighbors_ = num_neighbors;

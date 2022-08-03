@@ -29,8 +29,8 @@ void HcalNewClusterProducer::produce(framework::Event& event) {
   ClusterGeometry clusterGeometry(hcalGeometry, num_neighbors_);
   
   ClusterBuilder builder;
-  builder.SetThresholds2D( seed_threshold_2d_, neighbor_threshold_2d,);
-  builder.SetThresholds3D( seed_threshold_3d_, neighbor_threshold_3d,);
+  builder.SetThresholds2D( seed_threshold_2d_, neighbor_threshold_2d);
+  builder.SetThresholds3D( seed_threshold_3d_, neighbor_threshold_3d);
   builder.SetNeighbors( num_neighbors_ );
   builder.SetClusterGeo( &clusterGeometry );
   for (auto const& h : hcalRecHits) builder.AddHit(h);
@@ -48,6 +48,7 @@ void HcalNewClusterProducer::produce(framework::Event& event) {
     cluster.setRMSXYZ(c.xx,c.yy,c.zz);
     cluster.addStrips(c.strips);
 
+    cluster.setSeedEnergy(c.hits.at(0).e);
     cluster.setLayer(c.layer);
     
     hcalClusters_2d.push_back(cluster);
@@ -65,6 +66,7 @@ void HcalNewClusterProducer::produce(framework::Event& event) {
     cluster.addStrips(c.strips);
     
     cluster.setDepth(c.depth);
+    cluster.setSeedEnergy(c.clusters2d.at(0).e);
     cluster.setN2DClusters(c.clusters2d.size());
     cluster.setLayer(c.first_layer);
     

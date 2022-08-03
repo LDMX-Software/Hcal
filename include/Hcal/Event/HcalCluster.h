@@ -60,6 +60,8 @@ class HcalCluster {
    */
   void setEnergy(double energy) { energy_ = energy; }
 
+  void setSeedEnergy(double energy) { seedenergy_ = energy;}
+  
   /**
    * Sets total number of hits in the cluster.
    * @param nHits The total number of hits.
@@ -114,6 +116,9 @@ class HcalCluster {
   // energy of cluster
   double getEnergy() const { return energy_; }
 
+  // energy of cluster seed
+  double getSeedEnergy() const { return seedenergy_; }
+  
   // number of hits - equivalent to number of strips
   int getNHits() const { return nHits_; }
 
@@ -152,6 +157,7 @@ class HcalCluster {
   std::vector<unsigned int> hitIDs_;
   std::vector<int> strips_;
   double energy_{0};
+  double seedenergy_{0};
   int nHits_{0};
   int n2D_{0};
   int layer_{0};

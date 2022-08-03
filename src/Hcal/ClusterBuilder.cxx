@@ -340,9 +340,6 @@ namespace hcal {
 	  cout << "look at clusters in layer " << test_layer << endl;
 	
 	for(int iclus2d=0; iclus2d<clusters2d.size(); iclus2d++){
-
-	  auto &seed2d = clusters2d[iclus2d].seed;
-
 	  // require an energy threshold for the 2d clusters
 	  if( clusters2d[iclus2d].e <= neighbor_threshold_3d_ )
 	    continue;
@@ -351,6 +348,7 @@ namespace hcal {
 	  // decided on dx and dy distances if TOA info is not used
 	  // or full dr = sqrt(dx^2+dy^2) if TOA info is used
 	  auto &seed2d = clusters2d[iclus2d].seed;
+
 	  if(!geom->CheckLayerNeighbor(last_seed2d,seed2d)) {
 	    if(debug){
 	      cout << "  -- " << iclus2d << " seed " << seed2d << endl; 
