@@ -158,18 +158,19 @@ namespace hcal {
     // use TOA hit information or not
     bool use_toa_ = true;
     
-    // energy thresholds (MeV)
-    double seed_threshold_2d_ = 0.1;
-    double neighbor_threshold_2d_ = 0.01;
-    double seed_threshold_3d_ = 0.1;
-    double neighbor_threshold_3d_ = 0.01;
+    // energy thresholds
+    double seed_threshold_2d_ = 0.1; // MeV
+    double neighbor_threshold_2d_ = 0.01; // MeV
+    double seed_threshold_3d_ = 0.1; // MeV
+    double neighbor_threshold_3d_ = 0.01; // MeV
     
     // number of neighboring strips
     int num_neighbors_ = 4;
 
     // maximum distance for two hits (with TOA information)
     // to be considered neighbors
-    double max_xy_ = 0;
+    // NOTE: for now, two times the scint width
+    double max_xy_ = 2*50; // mm
     
     // maximum number of layers for a 3d cluster
     int layer_max_ = 100;

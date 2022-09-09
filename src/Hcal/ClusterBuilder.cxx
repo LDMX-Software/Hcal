@@ -40,18 +40,6 @@ namespace hcal {
       } // end loop over pair2
     } // end loop over pair1
 
-    // define maximum distance between two hits
-    ldmx::HcalID id_strip1(0, 1, 0);
-    ldmx::HcalID id_strip2(0, 1, 1);
-    auto position_1 = id_map.at(id_strip1);
-    auto position_2 = id_map.at(id_strip2);
-    double max_xy_ = hcalGeometry.getScintillatorWidth()*2;
-    
-    cout << "max xy distance " << max_xy_ << endl;
-    cout << " pos 1 " << position_1.X() << " " << position_1.Y();
-    cout << " pos 2 " << position_2.X() << " " << position_2.Y();
-    cout << " d " << sqrt(pow(position_1.X()-position_2.X(),2)+
-			  pow(position_1.Y()-position_2.Y(),2)) << endl;
   }
   
   std::vector<Cluster> ClusterBuilder::Build2DClustersPerLayer(std::vector<Hit> hits) {
@@ -66,11 +54,14 @@ namespace hcal {
     }
 
     // find seeds
+    if(debug){
+      cout << " Finding seeds " << endl;
+    }
     std::vector<Cluster> clusters;
     for(auto &hitpair : hits_by_id){
       auto &hit = hitpair.second;
 
-      // find the local max between this hit and its neighbors
+      // find the local max between this hit and its neighboring strips
       bool isLocalMax = true;
       for(auto n : geom->strip_neighbors[hit.rawid]){
 	if (hits_by_id.count(n) && hits_by_id[n].e > hit.e && hits_by_id[n].rawid != hit.rawid) {
@@ -82,7 +73,7 @@ namespace hcal {
 	hit.used=true;
 
 	if(debug) {
-	  cout << "Hit is local max " << endl;
+	  cout << " This hit is local max " << endl;
 	  hit.Print();
 	}
 
@@ -102,9 +93,9 @@ namespace hcal {
     } // end loop over hits by ID
     
     if(debug){
-      cout << "After seed finding: " << endl;
+      cout << "Hits after seed finding: " << endl;
       for(auto &hitpair : hits_by_id) hitpair.second.Print();
-      cout << "Print cluster" << endl;
+      cout << "Seed clusters" << endl;
       for(auto &c : clusters) c.Print();
       cout << " ----- " << endl;
     }
@@ -131,7 +122,8 @@ namespace hcal {
 		float d = sqrt(pow(hits_by_id[n].x - hit.x, 2) +
 			       pow(hits_by_id[n].y - hit.y, 2));
 		if(debug) {
-		  cout << " hit neighbor " << d << " (x,y) " << hit.x << " " << hit.y << " max " << max_xy_ << endl;
+		  cout << " Using Time INFO: ";
+		  cout << " hit neighbor distance " << d << " (x,y) " << hit.x << " " << hit.y << " maximum distance " << max_xy_ << endl;
 		}
 		if(d > max_xy_)
 		  continue;
