@@ -2,11 +2,14 @@
 
 namespace hcal {
 
-  ClusterGeometry::ClusterGeometry( ldmx::HcalGeometry hcalGeometry, int num_neighbors=4 ) {
+  ClusterGeometry::ClusterGeometry( ldmx::HcalGeometry hcalGeometry ) {
+    /**
+     * Build map of posible strip neighbors in the same layer
+     * or possible layer neighbors, given raw ID.
+     */
     
     auto id_map = hcalGeometry.getStripPositionMap();
-      
-    // find adjacent strips in the same layer or adjacent layers
+
     for(auto pair1 = id_map.begin(); pair1 != id_map.end(); pair1++){
       for(auto pair2 = pair1; pair2 != id_map.end(); pair2++){
 	if (pair1==pair2) continue;
@@ -14,32 +17,41 @@ namespace hcal {
 	auto &id2 = pair2->first;
 	auto &pos1 = pair1->second;
 	auto &pos2 = pair2->second;
+	// select only IDs with same section
+	// TODO: add neighbors from different sections
 	if (id1.section() != id2.section()) continue;
+
+	// find adjacent strips in the same layer
 	if (id1.layer() == id2.layer()) {
 	  if (fabs(id1.strip() - id2.strip()) == 1) {
 	    AddStripNeighbor(id1.raw(), id2.raw());
 	  }
 	}
+	
+	// find adjacent strips in adjacent layers
 	if (fabs(id1.layer() - id2.layer()) == 1) {
-	  // cout << "neigh layers, x,y,strip1 " <<  pos1.X() << " " << pos1.Y() << " " << id1.strip() << " x,y,strip2 " << pos2.X() << " " << pos2.Y() << " " << id2.strip() << endl;
-	  // consider all neighboring strips in the map
-	  float d = 0;
-	  if (hcalGeometry.layerIsHorizontal(id1.layer())) {
-	    // if a layer is horizontal, compute x distance
-	    d = fabs(pos1.X() - pos2.X());
-	  }
-	  else {
-	    d = fabs(pos1.Y() - pos2.Y());
-	  }
-	  // width of scintillator is 50mm
-	  if ( d <= num_neighbors*50*2) {
-	    AddLayerNeighbor(id1.raw(), id2.raw());
-	  }
+
+	  // from the geometry, we have no way of knowing which strips are neighboring
+	  // so, we take all of the strips as neighbors
+	  // and take the distance between two hits in the 3d clustering
+	  AddLayerNeighbor(id1.raw(), id2.raw());
 	}
 	
       } // end loop over pair2
     } // end loop over pair1
+
+    // define maximum distance between two hits
+    ldmx::HcalID id_strip1(0, 1, 0);
+    ldmx::HcalID id_strip2(0, 1, 1);
+    auto position_1 = id_map.at(id_strip1);
+    auto position_2 = id_map.at(id_strip2);
+    double max_xy_ = hcalGeometry.getScintillatorWidth()*2;
     
+    cout << "max xy distance " << max_xy_ << endl;
+    cout << " pos 1 " << position_1.X() << " " << position_1.Y();
+    cout << " pos 2 " << position_2.X() << " " << position_2.Y();
+    cout << " d " << sqrt(pow(position_1.X()-position_2.X(),2)+
+			  pow(position_1.Y()-position_2.Y(),2)) << endl;
   }
   
   std::vector<Cluster> ClusterBuilder::Build2DClustersPerLayer(std::vector<Hit> hits) {
@@ -57,13 +69,10 @@ namespace hcal {
     std::vector<Cluster> clusters;
     for(auto &hitpair : hits_by_id){
       auto &hit = hitpair.second;
+
+      // find the local max between this hit and its neighbors
       bool isLocalMax = true;
       for(auto n : geom->strip_neighbors[hit.rawid]){
-	// if(debug) {
-	//   if (hits_by_id.count(n)) {
-	//     cout << "neighbor is in list of hits " << hits_by_id[n].e << " rawid " << hits_by_id[n].rawid << " hit e " << hit.e << " raw id " << hit.rawid << endl;
-        //  }
-	// }
 	if (hits_by_id.count(n) && hits_by_id[n].e > hit.e && hits_by_id[n].rawid != hit.rawid) {
 	  isLocalMax = false;
 	}
@@ -72,11 +81,12 @@ namespace hcal {
       if (isLocalMax && (hit.e > seed_threshold_2d_) && !hit.used){
 	hit.used=true;
 
-	// if(debug) {
-	//   cout << "local max " << endl;
-	//   hit.Print();
-	// }
-	
+	if(debug) {
+	  cout << "Hit is local max " << endl;
+	  hit.Print();
+	}
+
+	// TODO: add time information?
 	Cluster c;
 	c.hits.push_back( hit );
 	c.e = hit.e;
@@ -99,11 +109,11 @@ namespace hcal {
       cout << " ----- " << endl;
     }
 
-    // Add neighbors up to the specified limit
+    // add neighbors up to the specified limit
     int i_neighbor=0;
     while(i_neighbor < num_neighbors_){
       
-      // find unused neighbors for all clusters
+      // associate unused neighbors for all clusters
       std::map<int, std::vector<int> > assoc_clus2hitIDs;
       int unused_hits = 0;
       for(int iclus=0; iclus<clusters.size(); iclus++){
@@ -114,6 +124,18 @@ namespace hcal {
 	    if(hits_by_id.count(n) && 
 	       !hits_by_id[n].used && 
 	       hits_by_id[n].e > neighbor_threshold_2d_ ){
+
+	      // if using TOA information, use the xy distance
+	      // to further prune the neighbors to the seed 2d clusters
+	      if(use_toa_) {
+		float d = sqrt(pow(hits_by_id[n].x - hit.x, 2) +
+			       pow(hits_by_id[n].y - hit.y, 2));
+		if(debug) {
+		  cout << " hit neighbor " << d << " (x,y) " << hit.x << " " << hit.y << " max " << max_xy_ << endl;
+		}
+		if(d > max_xy_)
+		  continue;
+	      }
 	      neighbors.push_back(n);
 	      unused_hits ++;
 	    }
@@ -169,7 +191,7 @@ namespace hcal {
       }
 
       // rebuild cluster properties based on the new hits
-      // do log energy weighting here
+      // do energy weighting here
       for(auto &c : clusters){
 	c.e=0;
 	c.x=0;
@@ -222,9 +244,9 @@ namespace hcal {
     return clusters;
   }
   
-  void ClusterBuilder::Build2DClusters() {      
-    // @TODO: for now only use back hcal
+  void ClusterBuilder::Build2DClusters() {
     // loop over sections
+    // TODO: for now only use back hcal
     for (int section = 0; section < 1; section++) {
     
       // map hits by layer

@@ -20,7 +20,8 @@ class HcalNewClusterProducer(ldmxcfg.Producer) :
         self.cluster2d_coll_name = cluster2d_coll_name
         self.cluster3d_coll_name = cluster3d_coll_name
 
-        # energy thresholds for seed and neighbors
+        # energy thresholds
+        self.noise_threshold = 0.01 # MeV
         self.seed_threshold_2d = 0.1
         self.neighbor_threshold_2d = 0.01
 

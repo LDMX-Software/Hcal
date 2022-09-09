@@ -19,6 +19,8 @@ class HcalNewClusterProducer : public framework::Producer {
   /// name of 3d clusters to reconstruct
   std::string cluster3d_coll_name_{"Hcal3DClusters"};
 
+  /// noise energy threshold for hits entering clustering
+  double noise_threshold_;
   /// energy threshold for 2D/3D seed
   double seed_threshold_2d_;
   double seed_threshold_3d_;

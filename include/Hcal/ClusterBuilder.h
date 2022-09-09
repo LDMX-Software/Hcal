@@ -24,7 +24,7 @@ namespace hcal {
     std::map<int, std::vector<int> > strip_neighbors; 
     std::map<int, std::vector<int> > layer_neighbors; 
 
-    ClusterGeometry( ldmx::HcalGeometry hcalGeometry, int num_neighbors);
+    ClusterGeometry( ldmx::HcalGeometry hcalGeometry);
       
     // add a strip neighbor
     void AddStripNeighbor(int id1, int id2) {
@@ -153,17 +153,24 @@ namespace hcal {
     ClusterGeometry* geom;
 
     // debug
-    bool debug = false;
+    bool debug = true;
 
+    // use TOA hit information or not
+    bool use_toa_ = true;
+    
     // energy thresholds (MeV)
-    double seed_threshold_2d_;
-    double neighbor_threshold_2d_;
-    double seed_threshold_3d_;
-    double neighbor_threshold_3d_;
+    double seed_threshold_2d_ = 0.1;
+    double neighbor_threshold_2d_ = 0.01;
+    double seed_threshold_3d_ = 0.1;
+    double neighbor_threshold_3d_ = 0.01;
     
     // number of neighboring strips
-    int num_neighbors_;
+    int num_neighbors_ = 4;
 
+    // maximum distance for two hits (with TOA information)
+    // to be considered neighbors
+    double max_xy_ = 0;
+    
     // maximum number of layers for a 3d cluster
     int layer_max_ = 100;
 
@@ -182,7 +189,9 @@ namespace hcal {
     void SetNeighbors ( int num_neighbors ) {
       num_neighbors_ = num_neighbors;
     }
-
+    void SetTOA( bool use_toa ){
+      use_toa_ = use_toa;
+    }
 
     // add hit to all_hits
     void AddHit(ldmx::HcalHit h){
