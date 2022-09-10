@@ -47,16 +47,13 @@ namespace hcal {
     std::map<int,Hit> hits_by_id;
     for(auto &hit : hits) hits_by_id[hit.rawid]=hit;
 
-    if(debug){
-      cout << "--------\nBuild2DClustersLayer Input Hits" << endl;
-      for(auto &hitpair : hits_by_id) hitpair.second.Print();
-      cout << " ----- " << endl;
-    }
+    // if(debug){
+    //   cout << "--------\nBuild2DClustersLayer Input Hits" << endl;
+    //   for(auto &hitpair : hits_by_id) hitpair.second.Print();
+    //   cout << " ----- " << endl;
+    // }
 
     // find seeds
-    if(debug){
-      cout << " Finding seeds " << endl;
-    }
     std::vector<Cluster> clusters;
     for(auto &hitpair : hits_by_id){
       auto &hit = hitpair.second;
@@ -64,7 +61,18 @@ namespace hcal {
       // find the local max between this hit and its neighboring strips
       bool isLocalMax = true;
       for(auto n : geom->strip_neighbors[hit.rawid]){
-	if (hits_by_id.count(n) && hits_by_id[n].e > hit.e && hits_by_id[n].rawid != hit.rawid) {
+	// do not consider neighboring strips that are not hit
+	if (!hits_by_id.count(n)) {
+	  continue;
+	}
+	
+	// if neigboring hit is not a real neighbor, it can not be used for computing the local max
+	if(use_toa_ && !isStripNeighbor(hits_by_id[n],hit,max_xy_2d_)) {
+	  continue;
+	}
+	
+	// check if neighboring hit has larger energy deposits
+	if (hits_by_id[n].e > hit.e && hits_by_id[n].rawid != hit.rawid) {
 	  isLocalMax = false;
 	}
       }
@@ -72,10 +80,10 @@ namespace hcal {
       if (isLocalMax && (hit.e > seed_threshold_2d_) && !hit.used){
 	hit.used=true;
 
-	if(debug) {
-	  cout << " This hit is local max " << endl;
-	  hit.Print();
-	}
+	// if(debug) {
+	//   cout << " This hit is local max " << endl;
+	//   hit.Print();
+	// }
 
 	// TODO: add time information?
 	Cluster c;
@@ -93,11 +101,10 @@ namespace hcal {
     } // end loop over hits by ID
     
     if(debug){
-      cout << "Hits after seed finding: " << endl;
-      for(auto &hitpair : hits_by_id) hitpair.second.Print();
-      cout << "Seed clusters" << endl;
+      // cout << "Hits after seed finding: " << endl;
+      // for(auto &hitpair : hits_by_id) hitpair.second.Print();
+      cout << "\n2D: Seed clusters" << endl;
       for(auto &c : clusters) c.Print();
-      cout << " ----- " << endl;
     }
 
     // add neighbors up to the specified limit
@@ -110,6 +117,7 @@ namespace hcal {
       for(int iclus=0; iclus<clusters.size(); iclus++){
 	auto &clus=clusters[iclus];
 	std::vector<int> neighbors;
+	// clus.Print();
 	for(const auto &hit : clus.hits){
 	  for(auto n : geom->strip_neighbors[hit.rawid]){
 	    if(hits_by_id.count(n) && 
@@ -118,16 +126,14 @@ namespace hcal {
 
 	      // if using TOA information, use the xy distance
 	      // to further prune the neighbors to the seed 2d clusters
-	      if(use_toa_) {
-		float d = sqrt(pow(hits_by_id[n].x - hit.x, 2) +
-			       pow(hits_by_id[n].y - hit.y, 2));
+	      if(use_toa_ && !isStripNeighbor(hits_by_id[n],hit,max_xy_2d_)) {
 		if(debug) {
-		  cout << " Using Time INFO: ";
-		  cout << " hit neighbor distance " << d << " (x,y) " << hit.x << " " << hit.y << " maximum distance " << max_xy_ << endl;
+		  cout << "  The following hit is discarded " << endl;
+		  hits_by_id[n].Print();
 		}
-		if(d > max_xy_)
-		  continue;
+		continue;
 	      }
+	      
 	      neighbors.push_back(n);
 	      unused_hits ++;
 	    }
@@ -136,7 +142,10 @@ namespace hcal {
 	assoc_clus2hitIDs[iclus] = neighbors;
       }
 
-      if(unused_hits == 0) break;
+      if(unused_hits == 0) {
+	// cout << "unused hits 0 " << endl;
+	break;
+      }
       
       // check to how many clusters, each hit is associated to
       std::map<int, std::vector<int> > assoc_hitID2clusters;
@@ -197,8 +206,10 @@ namespace hcal {
 	  auto hit=h;
 	  c.e += h.e;
 	  double energy = h.e;
-	  // double w = std::max(0., log(h.e/MIN_ENERGY_)); // use log-e wgt
-	  double w = std::max(0., energy);
+          double w = std::max(0., energy);
+	  if(energy_weight_==1) {
+	    double w = std::max(0., log(c.e/MIN_ENERGY_));
+	  }
 	  c.x += h.x * w;
 	  c.y += h.y * w;
 	  c.z += h.z * w;
@@ -220,18 +231,23 @@ namespace hcal {
 
       i_neighbor ++;
 
-      if(debug){
-	cout << "--------\nAfter " << i_neighbor 
-	     << " neighbors" << endl;
-	for(auto &hitpair : hits_by_id) hitpair.second.Print();
-	cout << "Print cluster " << endl;
-	for(auto &c : clusters) c.Print();
-	cout << " ----- " << endl;
-      }
-
-      
+      // if(debug){
+      // 	cout << "--------\nHits after " << i_neighbor 
+      // 	     << " neighbors" << endl;
+      // 	for(auto &hitpair : hits_by_id) hitpair.second.Print();
+      // 	cout << "Clusters " << endl;
+      // 	for(auto &c : clusters) c.Print();
+      // 	cout << " ----- " << endl;
+      // }
       
     } // neighbor loop
+
+    if(debug) {
+      cout << "\nFinal hits and clusters after " << i_neighbor
+	   << " neighbors" << endl;
+      for(auto &hitpair : hits_by_id) hitpair.second.Print();
+      for(auto &c : clusters) c.Print();
+    }
     
     return clusters;
   }
@@ -256,6 +272,7 @@ namespace hcal {
       // run clustering in each layer
       for(auto &pair : layer_hits){
 	if(debug){
+	  cout << "----- " << endl;
 	  cout << "Found " << pair.second.size()
 	       << " hits in layer " << pair.first << endl;
 	}
@@ -272,12 +289,12 @@ namespace hcal {
 
   void ClusterBuilder::Build3DClusters() {
     if(debug){
-      cout << "--------\nBuilding 3d clusters" << endl;
+      cout << "\n\n3D: Building 3d clusters" << endl;
     }
 
     // sort 2d clusters by layer
     std::vector<std::vector<Cluster> > layer_clusters;
-    layer_clusters.resize(layer_max_); // first 100 layers
+    layer_clusters.resize(layer_max_); // NOTE: consider only first 100 2d clusters
     for(auto &clus : all_clusters){
       layer_clusters[clus.layer].push_back(clus);
     }
@@ -286,12 +303,11 @@ namespace hcal {
     for(auto &clusters : layer_clusters) 
       ESort(clusters);
     
-    
     if(debug){
-      cout << "--------\n3d: sorted 2d inputs" << endl;
+      cout << "\nSorted 2d inputs (in each layer by energy)" << endl;
       for(auto &clusters : layer_clusters) 
 	for(auto &c : clusters) c.Print();
-      cout << " size " << layer_clusters.size() << endl;
+      // cout << " size " << layer_clusters.size() << endl;
     }
     
     // identify cluster seed layer (max shower)
@@ -305,7 +321,6 @@ namespace hcal {
 
       // find seed, from global shower max
       // derived from the first available cluster in each layer
-	
       int layer_showermax = -1;
       double e_showermax = seed_threshold_3d_;
       for(auto &clusters : layer_clusters) {
@@ -319,12 +334,10 @@ namespace hcal {
 
       if (layer_showermax==-1)
 	break;
-
-      if(debug) 
-	cout << "e_showermax " << e_showermax << " layer " << layer_showermax << endl;
-
-      auto &clusters2d=layer_clusters[layer_showermax];
-      if(debug){
+      
+      auto &clusters2d = layer_clusters[layer_showermax];
+      if(debug) {
+	cout << "\nFound showermax: ";
 	clusters2d[0].Print();
       }
       
@@ -332,80 +345,139 @@ namespace hcal {
       cluster3d.depth = 1;
       cluster3d.first_layer = layer_showermax;
       cluster3d.last_layer = layer_showermax;
+      cluster3d.seed = clusters2d[0].seed;
       clusters2d.erase( clusters2d.begin() );
-
-      // loop to front of hcal from the showermax, and then to back of hcal	
+      
+      // loop to front of hcal from the showermax, and then to back of hcal
+      int found_in_last_layer = 1;
       for( int ilayer=1; ilayer<layer_max_; ilayer++) {
 	int test_layer = ilayer;
-	if (ilayer < layer_max_ - layer_showermax)
+	if (ilayer < layer_max_ - layer_showermax) {
 	  test_layer = layer_showermax+ilayer;
-	else
-	  test_layer = layer_max_-ilayer-1;
-
-	if(layer_clusters[test_layer].size() <= 0) continue;
-	
-	auto &last_seed2d = cluster3d.clusters2d.back().seed;
-	if(test_layer == layer_showermax-1) 
-	  last_seed2d = cluster3d.clusters2d.front().seed;
-	
-	auto &clusters2d=layer_clusters[test_layer];
-
-	if(debug) 
-	  cout << "look at clusters in layer " << test_layer << endl;
-	
-	for(int iclus2d=0; iclus2d<clusters2d.size(); iclus2d++){
-	  // require an energy threshold for the 2d clusters
-	  if( clusters2d[iclus2d].e <= neighbor_threshold_3d_ )
-	    continue;
-	  
-	  // check if 2d seed is neighboring
-	  // decided on dx and dy distances if TOA info is not used
-	  // or full dr = sqrt(dx^2+dy^2) if TOA info is used
-	  auto &seed2d = clusters2d[iclus2d].seed;
-
-	  if(!geom->CheckLayerNeighbor(last_seed2d,seed2d)) {
-	    if(debug){
-	      cout << "  -- " << iclus2d << " seed " << seed2d << endl; 
-	      cout << " not neigh " << endl;
-	      clusters2d[iclus2d].Print();
-	    }
-	  }
-	  
-	  if(last_seed2d==seed2d || 
-	     geom->CheckLayerNeighbor(last_seed2d,seed2d)){
-	    
-	    if(debug){
-	      cout << " extend: ";
-	      clusters2d[iclus2d].Print();
-	    }
-	    if(test_layer < cluster3d.first_layer)
-	      cluster3d.first_layer = test_layer;
-	    if(test_layer > cluster3d.last_layer)
-	      cluster3d.last_layer = test_layer;
-			    
-	    cluster3d.clusters2d.push_back(clusters2d[iclus2d]);
-	    cluster3d.depth++;
-	    clusters2d.erase( clusters2d.begin()+iclus2d );
-	    break;			    
-	  }
 	}
-      } // end loop over layers
+	else {
+	  test_layer = layer_max_-ilayer-1;
+	}
+	
+	// get all possible 2d clusters from that layer
+	auto &clusters2d = layer_clusters[test_layer];
+	
+	// only look into layers that have 2d clusters
+	if(clusters2d.size() <= 0) {
+	  found_in_last_layer = 0;
+	  continue;
+	}
 
-      if(debug) {
-	for(auto &clusters : layer_clusters)
-	  for(auto &c : clusters) c.Print();
-      }
+	// get last 2d seed from 3d cluster
+	auto &last_cluster = cluster3d.clusters2d.back();
+	if(test_layer == layer_showermax-1)
+	  last_cluster = cluster3d.clusters2d.front();
+
+	// TODO:
+	// sometimes layers next to the shower max might not have hits
+	// so we modify the last seed reference here
+	if( (test_layer <= layer_showermax-1)
+	    && (last_cluster.layer > layer_showermax)
+	    && found_in_last_layer == 0) {
+	  last_cluster = cluster3d.clusters2d.front();
+	  if(debug){
+	    cout << "did not find in last layer ";
+	    cout << " new seed layer is " << last_cluster.layer << endl;
+	  }	    
+	}
+	
+	auto &last_seed2d = last_cluster.seed;
+
+	if(debug) {
+	  cout << "Look at " << clusters2d.size() << " clusters in layer " << test_layer;
+	  cout << " with last seed layer " << last_cluster.layer << endl;
+        }
+
+	int found_this_layer = 0;
+	for(int iclus2d=0; iclus2d<clusters2d.size(); iclus2d++){
+	  // require an energy threshold for the neighboring 2d clusters
+	  auto &seed2d = clusters2d[iclus2d].seed;
+	  if( clusters2d[iclus2d].e <= neighbor_threshold_3d_) {
+	    if(debug){
+	      cout << " Cluster does not pass neighbor threshold " << endl;
+	    }
+	    continue;
+	  }
+
+	  // sometimes layers next to the layer of the last seed might not have hits
+	  // we can have a threshold of 1 (maybe? make it configurable)
+	  if( found_in_last_layer==0 &&
+	      ((last_cluster.layer < test_layer-2) || (last_cluster.layer > test_layer+2)) ) {
+	    if(debug){
+	      cout << " Cluster not neighbor " << last_cluster.layer << " " << test_layer << endl;
+	    }
+	    continue;
+	  }
+	  if( found_in_last_layer==1 && !geom->CheckLayerNeighbor(last_seed2d,seed2d) && last_seed2d!=seed2d ) {
+	    if(debug){
+	      cout << " Cluster is not a layer neighbor " << last_cluster.layer << " " << test_layer << endl;
+	    }
+	    continue;
+	  }
+	  
+	  if(use_toa_) {
+	    // check distance between cluster centers
+	    Hit clus2d_center;
+	    clus2d_center.x = clusters2d[iclus2d].x;
+	    clus2d_center.y = clusters2d[iclus2d].y;
+	    Hit lastclus2d_center;
+	    lastclus2d_center.x = last_cluster.x;
+	    lastclus2d_center.y = last_cluster.y;
+	    if(!isStripNeighbor(clus2d_center,lastclus2d_center,max_xy_3d_)) {
+	      if(debug){
+		cout << " The following 2D cluster is not a neighbor: ";
+		clusters2d[iclus2d].Print();
+	      }
+	      continue;
+	    }
+	  }
+	    
+	  if(debug){
+	    cout << " Extend with this cluster: ";
+	    clusters2d[iclus2d].Print();
+	  }
+	  
+	  if(test_layer < cluster3d.first_layer)
+	    cluster3d.first_layer = test_layer;
+	  if(test_layer > cluster3d.last_layer)
+	    cluster3d.last_layer = test_layer;
+	  
+	  cluster3d.clusters2d.push_back(clusters2d[iclus2d]);
+	  cluster3d.depth++;
+	  clusters2d.erase( clusters2d.begin()+iclus2d );
+
+	  // once it found a neighboring 2d cluster, proceed to next layer
+	  // TODO: are all the 3D clusters associated to only 1 2d cluster in each layer??
+	  // perhaps not..
+	  found_this_layer = 1;
+	  break;
+	}
+	if(found_this_layer == 0)
+	  found_in_last_layer = 0;
+	  
+      } // end loop over layers
       
       if(cluster3d.depth==0){
 	building=false;
       }
       else {
+	// only push back 3d clusters with depth more or equal than 2..
 	if(cluster3d.depth >= 2)
 	  clusters3d.push_back(cluster3d);
       }
 
     } // building
-  
+
+    if(debug){
+      cout << "\nAfter building, found 3d clusters" << endl;
+      for(auto &c : clusters3d) c.Print3d();
+    }
+    
     // post-process
     for(auto &c : clusters3d){
       c.e=0;
@@ -419,9 +491,11 @@ namespace hcal {
       c.hits.clear();
       for(auto c2 : c.clusters2d){
 	c.e += c2.e;
-	//cout << "3d: " << c2.e << " " << log(c2.e/MIN_TP_ENERGY) << endl;
 	double energy = c2.e;
 	double w = std::max(0., energy);
+	if(energy_weight_==1) {
+	  double w = std::max(0., log(c2.e/MIN_ENERGY_));
+	}
 	c.x += c2.x * w;
 	c.y += c2.y * w;
 	c.z += c2.z * w;
@@ -446,7 +520,7 @@ namespace hcal {
     }
     
     if(debug){
-      cout << "--------\nFound 3d clusters" << endl;
+      cout << "\nAfter postprocess, found 3d clusters" << endl;
       for(auto &c : clusters3d) c.Print3d();
     }
 

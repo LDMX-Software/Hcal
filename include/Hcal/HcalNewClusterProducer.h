@@ -27,6 +27,9 @@ class HcalNewClusterProducer : public framework::Producer {
   /// energy threshold for 2D/3D neighbors
   double neighbor_threshold_2d_;
   double neighbor_threshold_3d_;
+  /// max xy
+  double max_xy_2d_;
+  double max_xy_3d_;
   /// number of 2D neighbors
   int num_neighbors_;
   

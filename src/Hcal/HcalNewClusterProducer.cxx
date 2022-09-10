@@ -16,7 +16,9 @@ void HcalNewClusterProducer::configure(framework::config::Parameters& p) {
   neighbor_threshold_2d_ = p.getParameter("neighbor_threshold_2d", neighbor_threshold_2d_);
   seed_threshold_3d_ = p.getParameter("seed_threshold_3d", seed_threshold_3d_);
   neighbor_threshold_3d_ = p.getParameter("neighbor_threshold_3d", neighbor_threshold_3d_);
-  
+  num_neighbors_ = p.getParameter("num_neighbors", num_neighbors_ );
+  max_xy_2d_ = p.getParameter("max_xy_2d", max_xy_2d_ );
+  max_xy_3d_ = p.getParameter("max_xy_3d", max_xy_3d_ );
 }
 
 void HcalNewClusterProducer::produce(framework::Event& event) {
@@ -32,6 +34,7 @@ void HcalNewClusterProducer::produce(framework::Event& event) {
   builder.SetThresholds2D( seed_threshold_2d_, neighbor_threshold_2d_);
   builder.SetThresholds3D( seed_threshold_3d_, neighbor_threshold_3d_);
   builder.SetNeighbors( num_neighbors_ );
+  builder.SetMaxXY( max_xy_2d_, max_xy_3d_ );
   builder.SetClusterGeo( &clusterGeometry );
   for (auto const& h : hcalRecHits) {
     // quality cuts for hits entering clustering
@@ -78,7 +81,7 @@ void HcalNewClusterProducer::produce(framework::Event& event) {
   }
   // add collection to event bus
   event.add(cluster3d_coll_name_, hcalClusters_3d);
-
+  
 }
 
 }  // namespace hcal

@@ -153,7 +153,7 @@ namespace hcal {
     ClusterGeometry* geom;
 
     // debug
-    bool debug = true;
+    bool debug = false;
 
     // use TOA hit information or not
     bool use_toa_ = true;
@@ -169,8 +169,9 @@ namespace hcal {
 
     // maximum distance for two hits (with TOA information)
     // to be considered neighbors
-    // NOTE: for now, two times the scint width
-    double max_xy_ = 2*50; // mm
+    // scint width = 50mm
+    double max_xy_2d_ = 3*50; // mm
+    double max_xy_3d_ = 6*50; // mm
     
     // maximum number of layers for a 3d cluster
     int layer_max_ = 100;
@@ -178,7 +179,12 @@ namespace hcal {
     // min energy
     double MIN_ENERGY_ = 0.5; // MeV
 
-    // Set thresholds and number of neighbors
+    // energy weight
+    // if 0: use energy for cluster3d weight
+    // if 1: use log(energy) for cluster3d weight
+    int energy_weight_ = 0;
+    
+    // set thresholds and number of neighbors
     void SetThresholds2D( double seed_threshold, double neighbor_threshold) {
       seed_threshold_2d_ = seed_threshold;
       neighbor_threshold_2d_ = neighbor_threshold;
@@ -190,10 +196,32 @@ namespace hcal {
     void SetNeighbors ( int num_neighbors ) {
       num_neighbors_ = num_neighbors;
     }
-    void SetTOA( bool use_toa ){
+    void SetTOA( bool use_toa ) {
       use_toa_ = use_toa;
     }
+    void SetMaxXY( double max_xy_2d, double max_xy_3d ) {
+      max_xy_2d_ = max_xy_2d;
+      max_xy_3d_ = max_xy_3d;
+    }
 
+    // check distance between hits
+    bool isStripNeighbor(Hit h1, Hit h2, double max_xy) {
+      float d = sqrt(pow(h1.x - h2.x, 2) +
+		     pow(h1.y - h2.y, 2));
+      if (d > max_xy) {
+	if(debug) {
+	  cout << " Comparing these two hit positions: ";
+	  cout << " (" << h1.x << "," << h1.y << ")";
+	  cout << " (" << h2.x << "," << h2.y << ")" << endl;
+	  cout << " 1st hit is not a real strip neighbor from 2nd hit: " << d << " max_distance " << max_xy << endl;;
+	} 
+	return false;
+      }
+      else{
+	return true;
+      }
+    }
+    
     // add hit to all_hits
     void AddHit(ldmx::HcalHit h){
       Hit hit;

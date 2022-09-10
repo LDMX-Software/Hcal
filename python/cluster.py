@@ -30,3 +30,7 @@ class HcalNewClusterProducer(ldmxcfg.Producer) :
         
         # number of neighboring strips
         self.num_neighbors = 4
+
+        # max xy (mm)
+        self.max_xy_2d = 3*50.
+        self.max_xy_3d = 8*50.
