@@ -34,3 +34,5 @@ class HcalNewClusterProducer(ldmxcfg.Producer) :
         # max xy (mm)
         self.max_xy_2d = 3*50.
         self.max_xy_3d = 8*50.
+
+        self.use_toa = True

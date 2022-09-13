@@ -155,6 +155,10 @@ class HcalCluster {
 
   // get strips
   const std::vector<int>& getStrips() const { return strips_; }
+
+  int getOddLayerStrips() const { return strips_odd_layer_; }
+
+  int getEvenLayerStrips() const { return strips_even_layer_; }
   
   bool operator<(const HcalCluster& rhs) const {
     return this->getEnergy() < rhs.getEnergy();

@@ -14,16 +14,15 @@ void HcalNewClusterProducer::configure(framework::config::Parameters& p) {
   cluster3d_coll_name_ =
       p.getParameter("cluster3d_coll_name", cluster3d_coll_name_);
 
-  noise_threshold_ = p.getParameter("noise_threshold", noise_threshold_);
-  seed_threshold_2d_ = p.getParameter("seed_threshold_2d", seed_threshold_2d_);
-  neighbor_threshold_2d_ =
-      p.getParameter("neighbor_threshold_2d", neighbor_threshold_2d_);
-  seed_threshold_3d_ = p.getParameter("seed_threshold_3d", seed_threshold_3d_);
-  neighbor_threshold_3d_ =
-      p.getParameter("neighbor_threshold_3d", neighbor_threshold_3d_);
-  num_neighbors_ = p.getParameter("num_neighbors", num_neighbors_);
-  max_xy_2d_ = p.getParameter("max_xy_2d", max_xy_2d_);
-  max_xy_3d_ = p.getParameter("max_xy_3d", max_xy_3d_);
+  num_neighbors_ = p.getParameter<int>("num_neighbors");
+  noise_threshold_ = p.getParameter<double>("noise_threshold");
+  seed_threshold_2d_ = p.getParameter<double>("seed_threshold_2d");
+  neighbor_threshold_2d_ = p.getParameter<double>("neighbor_threshold_2d");
+  seed_threshold_3d_ = p.getParameter<double>("seed_threshold_3d");
+  neighbor_threshold_3d_ = p.getParameter<double>("neighbor_threshold_3d");
+  max_xy_2d_ = p.getParameter<double>("max_xy_2d");
+  max_xy_3d_ = p.getParameter<double>("max_xy_3d");
+  use_toa_ = p.getParameter<bool>("use_toa");
 }
 
 void HcalNewClusterProducer::produce(framework::Event& event) {
@@ -39,6 +38,7 @@ void HcalNewClusterProducer::produce(framework::Event& event) {
   builder.SetThresholds3D(seed_threshold_3d_, neighbor_threshold_3d_);
   builder.SetNeighbors(num_neighbors_);
   builder.SetMaxXY(max_xy_2d_, max_xy_3d_);
+  builder.SetTOA(use_toa_);
   builder.SetClusterGeo(&clusterGeometry);
   for (auto const& h : hcalRecHits) {
     // quality cuts for hits entering clustering

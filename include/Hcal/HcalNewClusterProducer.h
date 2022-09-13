@@ -32,6 +32,8 @@ class HcalNewClusterProducer : public framework::Producer {
   double max_xy_3d_;
   /// number of 2D neighbors
   int num_neighbors_;
+  /// whether to use TOA info or not
+  bool use_toa_;
   
  private:
 
