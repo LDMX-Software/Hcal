@@ -79,6 +79,13 @@ class HcalCluster {
    * @param stripsVec Vector of strips
    */
   void addStrips(const std::vector<int> stripsVec);
+
+  void setStripsOdd(const std::vector<int> stripsVec) {
+    strips_odd_layer_ = stripsVec.size();
+  }
+  void setStripsEven(const std::vector<int> stripsVec) {
+    strips_even_layer_ = stripsVec.size();
+  }
   
   /**
    * Sets a sorted vector for the IDs of the hits
@@ -161,6 +168,8 @@ class HcalCluster {
   int nHits_{0};
   int n2D_{0};
   int layer_{0};
+  int strips_even_layer_{0};
+  int strips_odd_layer_{0};
   double centroidX_{0};
   double centroidY_{0};
   double centroidZ_{0};

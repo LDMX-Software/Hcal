@@ -86,6 +86,8 @@ namespace hcal {
   public:
     std::vector<Hit> hits;
     std::vector<int> strips;
+    std::vector<int> strips_oddlayer;
+    std::vector<int> strips_evenlayer;
     std::vector<Cluster> clusters2d; // for 3d
 
     float x=0;

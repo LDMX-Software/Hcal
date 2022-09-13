@@ -106,7 +106,7 @@ void HcalSingleEndRecProducer::configure(framework::config::Parameters& p) {
 
   rec_pass_name_ = p.getParameter("rec_pass_name", rec_pass_name_);
   rec_coll_name_ = p.getParameter("rec_coll_name", rec_coll_name_);
-  
+
   pe_per_mip_ = p.getParameter<double>("pe_per_mip");
   mip_energy_ = p.getParameter<double>("mip_energy");
   clock_cycle_ = p.getParameter<double>("clock_cycle");

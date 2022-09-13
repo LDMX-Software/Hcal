@@ -109,8 +109,8 @@ struct PolarfireEventHeader {
     event.add(prefix + "MM", MM);
     event.add(prefix + "hh", hh);
     event.add(prefix + "mm", mm);
-    event.add(prefix+"GoodLinkHeader", good_bxheader);
-    event.add(prefix+"GoodLinkTrailer", good_trailer);
+    event.add(prefix + "GoodLinkHeader", good_bxheader);
+    event.add(prefix + "GoodLinkTrailer", good_trailer);
   }
 };
 
@@ -481,13 +481,14 @@ class HcalRawDecoder : public framework::Producer {
               bool good_idle = (w == 0xaccccccc);
               eh.good_trailer[i_link] = good_idle;
 #ifdef DEBUG
-              std::cout << " : " << (good_idle?"Good":"Bad") << " Idle";
+              std::cout << " : " << (good_idle ? "Good" : "Bad") << " Idle";
 #endif
             } else {
               bool good_crc = (link_crc.get() == w);
               eh.good_trailer[i_link] = good_crc;
 #ifdef DEBUG
-              std::cout << " : CRC checksum  : " << debug::hex(link_crc.get()) << " =? " << debug::hex(w);
+              std::cout << " : CRC checksum  : " << debug::hex(link_crc.get())
+                        << " =? " << debug::hex(w);
 #endif
             }
             /*

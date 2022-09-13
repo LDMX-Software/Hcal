@@ -28,7 +28,6 @@ class HcalDoubleEndRecProducer : public framework::Producer {
   double clock_cycle_;
 
  private:
-
  public:
   HcalDoubleEndRecProducer(const std::string& n, framework::Process& p)
       : Producer(n, p) {}
@@ -54,8 +53,7 @@ void HcalDoubleEndRecProducer::produce(framework::Event& event) {
   const auto& conditions{
       getCondition<HcalReconConditions>(HcalReconConditions::CONDITIONS_NAME)};
 
-  auto hcalRecHits =
-      event.getCollection<ldmx::HcalHit>(coll_name_, pass_name_);
+  auto hcalRecHits = event.getCollection<ldmx::HcalHit>(coll_name_, pass_name_);
 
   std::vector<ldmx::HcalHit> doubleHcalRecHits;
 
@@ -75,26 +73,27 @@ void HcalDoubleEndRecProducer::produce(framework::Event& event) {
   // make pairs of hcal rechits indices that belong to the same pulse
   // @TODO: for now we just take the first two indices that have opposite-ends
   //        we do not cover the case where two hits come separated in time
-  std::map<ldmx::HcalID, std::pair<int,int>> indicesByID;
+  std::map<ldmx::HcalID, std::pair<int, int>> indicesByID;
   for (auto const& hcalBar : hitsByID) {
     auto id = hcalBar.first;
 
-    std::pair<int,int> indices(-1,-1);
+    std::pair<int, int> indices(-1, -1);
     int iHit = 0;
-    while ( iHit < hcalBar.second.size() ) {
+    while (iHit < hcalBar.second.size()) {
       auto hit = hcalBar.second.at(iHit);
 
-      ldmx::HcalDigiID digi_id(hit.getSection(), hit.getLayer(), hit.getStrip(), hit.getEnd());
-      if(digi_id.isNegativeEnd() && indices.second==-1) {
-	indices.second = iHit;
+      ldmx::HcalDigiID digi_id(hit.getSection(), hit.getLayer(), hit.getStrip(),
+                               hit.getEnd());
+      if (digi_id.isNegativeEnd() && indices.second == -1) {
+        indices.second = iHit;
       }
-      if(!digi_id.isNegativeEnd() && indices.first==-1) {
-	indices.first = iHit;
+      if (!digi_id.isNegativeEnd() && indices.first == -1) {
+        indices.first = iHit;
       }
     }
     indicesByID[id] = indices;
   }
-  
+
   // reconstruct double-ended hits
   for (auto const& hcalBar : hitsByID) {
     auto id = hcalBar.first;
@@ -103,8 +102,7 @@ void HcalDoubleEndRecProducer::produce(framework::Event& event) {
     auto position = hcalGeometry.getStripCenterPosition(id);
 
     // skip non-double-ended layers
-    if (id.layer() != ldmx::HcalID::HcalSection::BACK)
-      continue;
+    if (id.layer() != ldmx::HcalID::HcalSection::BACK) continue;
 
     // get two hits to reconstruct
     auto hitPosEnd = hcalBar.second.at(indicesByID[id].first);
@@ -112,11 +110,10 @@ void HcalDoubleEndRecProducer::produce(framework::Event& event) {
 
     // update position in strip according to time measurement
     double v =
-      299.792 / 1.6;  // velocity of light in polystyrene, n = 1.6 = c/v
+        299.792 / 1.6;  // velocity of light in polystyrene, n = 1.6 = c/v
     double hitTimeDiff = hitPosEnd.getTime() - hitNegEnd.getTime();
     int position_bar_sign = hitTimeDiff > 0 ? 1 : -1;
-    double position_bar =
-      position_bar_sign * fabs(hitTimeDiff) * v / 2;
+    double position_bar = position_bar_sign * fabs(hitTimeDiff) * v / 2;
     if (hcalGeometry.layerIsHorizontal(hitPosEnd.getLayer())) {
       position.SetX(position_bar);
     } else {
@@ -127,11 +124,12 @@ void HcalDoubleEndRecProducer::produce(framework::Event& event) {
     double hitTime = (hitPosEnd.getTime() + hitNegEnd.getTime());
 
     // amplitude and PEs
-    double num_mips_equivalent = (hitPosEnd.getAmplitude() + hitNegEnd.getAmplitude());
+    double num_mips_equivalent =
+        (hitPosEnd.getAmplitude() + hitNegEnd.getAmplitude());
     double PEs = (hitPosEnd.getPE() + hitNegEnd.getPE());
     double reconstructed_energy =
-      num_mips_equivalent * pe_per_mip_ * mip_energy_;
-    
+        num_mips_equivalent * pe_per_mip_ * mip_energy_;
+
     // reconstructed Hit
     ldmx::HcalHit recHit;
     recHit.setID(id.raw());
@@ -142,7 +140,7 @@ void HcalDoubleEndRecProducer::produce(framework::Event& event) {
     recHit.setStrip(id.strip());
     recHit.setLayer(id.layer());
     recHit.setPE(PEs);
-    recHit.setMinPE(std::min(hitPosEnd.getPE(),hitNegEnd.getPE()));
+    recHit.setMinPE(std::min(hitPosEnd.getPE(), hitNegEnd.getPE()));
     recHit.setAmplitude(num_mips_equivalent);
     recHit.setEnergy(reconstructed_energy);
     recHit.setTime(hitTime);

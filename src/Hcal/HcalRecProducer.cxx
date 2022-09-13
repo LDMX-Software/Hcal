@@ -204,7 +204,7 @@ void HcalRecProducer::produce(framework::Event& event) {
         }
 
         // set voltage
-	voltage_posend = amplT_posend * the_conditions.adcGain(id_posend, 0);
+        voltage_posend = amplT_posend * the_conditions.adcGain(id_posend, 0);
         voltage_negend = amplT_negend * the_conditions.adcGain(id_negend, 0);
       }
 

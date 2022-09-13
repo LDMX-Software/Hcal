@@ -37,15 +37,15 @@ ClassImp(ldmx::HcalCluster)
     }
     setIDs(vecIDs);
   }
-      
+
   void HcalCluster::addStrips(const std::vector<int> stripsVec) {
     // add only unique strips to a list
     strips_.clear();
     for (auto strip : stripsVec) {
       if (!std::count(strips_.begin(), strips_.end(), strip)) {
-	strips_.push_back(strip);
+        strips_.push_back(strip);
       }
     }
   }
-      
+
 }  // namespace ldmx
