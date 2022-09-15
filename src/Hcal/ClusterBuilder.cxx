@@ -228,16 +228,6 @@ std::vector<Cluster> ClusterBuilder::Build2DClustersPerLayer(
     }
 
     i_neighbor++;
-
-    // if(debug){
-    // 	cout << "--------\nHits after " << i_neighbor
-    // 	     << " neighbors" << endl;
-    // 	for(auto &hitpair : hits_by_id) hitpair.second.Print();
-    // 	cout << "Clusters " << endl;
-    // 	for(auto &c : clusters) c.Print();
-    // 	cout << " ----- " << endl;
-    // }
-
   }  // neighbor loop
 
   if (debug) {
@@ -303,7 +293,6 @@ void ClusterBuilder::Build3DClusters() {
     cout << "\nSorted 2d inputs (in each layer by energy)" << endl;
     for (auto &clusters : layer_clusters)
       for (auto &c : clusters) c.Print();
-    // cout << " size " << layer_clusters.size() << endl;
   }
 
   // identify cluster seed layer (max shower)
@@ -319,6 +308,7 @@ void ClusterBuilder::Build3DClusters() {
     int layer_showermax = -1;
     double e_showermax = seed_threshold_3d_;
     for (auto &clusters : layer_clusters) {
+      // since the layer clusters are sorted by energy we just check the first element
       if (clusters.size() > 0) {
         if (clusters.at(0).e > e_showermax) {
           layer_showermax = clusters.at(0).layer;
@@ -332,16 +322,16 @@ void ClusterBuilder::Build3DClusters() {
     auto &clusters2d = layer_clusters[layer_showermax];
     if (debug) {
       cout << "\nFound showermax: ";
-      clusters2d[0].Print();
+      clusters2d.at(0).Print();
     }
 
-    cluster3d.clusters2d = {clusters2d[0]};
+    cluster3d.clusters2d = {clusters2d.at(0)};
     cluster3d.depth = 1;
     cluster3d.first_layer = layer_showermax;
     cluster3d.last_layer = layer_showermax;
-    cluster3d.seed = clusters2d[0].seed;
+    cluster3d.seed = clusters2d.at(0).seed;
     clusters2d.erase(clusters2d.begin());
-
+    
     // loop to front of hcal from the showermax, and then to back of hcal
     int found_in_last_layer = 1;
     for (int ilayer = 1; ilayer < layer_max_; ilayer++) {
@@ -353,43 +343,50 @@ void ClusterBuilder::Build3DClusters() {
       }
 
       // get all possible 2d clusters from that layer
+      // and only look into layers that have 2d clusters
       auto &clusters2d = layer_clusters[test_layer];
-
-      // only look into layers that have 2d clusters
       if (clusters2d.size() <= 0) {
         found_in_last_layer = 0;
         continue;
       }
+      
+      // if layer is shower max make sure you do not include the seed
+      if(test_layer == layer_showermax) {
+	if (debug) {
+	  cout << "Same layer as shower max " << clusters2d.size() << endl;
+	}
+      }
 
       // get last 2d seed from 3d cluster
       auto &last_cluster = cluster3d.clusters2d.back();
-      if (test_layer == layer_showermax - 1)
-        last_cluster = cluster3d.clusters2d.front();
-
+      int last_cluster_layer = last_cluster.layer;
+      auto &last_seed2d = last_cluster.seed;
+      
       // TODO:
       // sometimes layers next to the shower max might not have hits
       // so we modify the last seed reference here
       if ((test_layer <= layer_showermax - 1) &&
           (last_cluster.layer > layer_showermax) && found_in_last_layer == 0) {
-        last_cluster = cluster3d.clusters2d.front();
+	last_cluster_layer = cluster3d.clusters2d.front().layer;
+	last_seed2d = cluster3d.clusters2d.front().seed;
         if (debug) {
           cout << "did not find in last layer ";
-          cout << " new seed layer is " << last_cluster.layer << endl;
+          cout << " new seed layer is " << last_cluster_layer << endl;
         }
       }
-
-      auto &last_seed2d = last_cluster.seed;
 
       if (debug) {
         cout << "Look at " << clusters2d.size() << " clusters in layer "
              << test_layer;
-        cout << " with last seed layer " << last_cluster.layer << endl;
+        cout << " with last seed layer " << last_cluster_layer << endl;
       }
 
+	
       int found_this_layer = 0;
       for (int iclus2d = 0; iclus2d < clusters2d.size(); iclus2d++) {
         // require an energy threshold for the neighboring 2d clusters
         auto &seed2d = clusters2d[iclus2d].seed;
+
         if (clusters2d[iclus2d].e <= neighbor_threshold_3d_) {
           if (debug) {
             cout << " Cluster does not pass neighbor threshold " << endl;
@@ -400,10 +397,10 @@ void ClusterBuilder::Build3DClusters() {
         // sometimes layers next to the layer of the last seed might not have
         // hits we can have a threshold of 1 (maybe? make it configurable)
         if (found_in_last_layer == 0 &&
-            ((last_cluster.layer < test_layer - 2) ||
-             (last_cluster.layer > test_layer + 2))) {
+            ((last_cluster_layer < test_layer - 2) ||
+             (last_cluster_layer > test_layer + 2))) {
           if (debug) {
-            cout << " Cluster not neighbor " << last_cluster.layer << " "
+            cout << " Cluster is not a close enough neighbor " << last_cluster_layer << " "
                  << test_layer << endl;
           }
           continue;
@@ -412,7 +409,7 @@ void ClusterBuilder::Build3DClusters() {
             !geom->CheckLayerNeighbor(last_seed2d, seed2d) &&
             last_seed2d != seed2d) {
           if (debug) {
-            cout << " Cluster is not a layer neighbor " << last_cluster.layer
+            cout << " Cluster is not a layer neighbor " << last_cluster_layer
                  << " " << test_layer << endl;
           }
           continue;
@@ -444,7 +441,7 @@ void ClusterBuilder::Build3DClusters() {
           cluster3d.first_layer = test_layer;
         if (test_layer > cluster3d.last_layer)
           cluster3d.last_layer = test_layer;
-
+	
         cluster3d.clusters2d.push_back(clusters2d[iclus2d]);
         cluster3d.depth++;
         clusters2d.erase(clusters2d.begin() + iclus2d);
@@ -465,16 +462,16 @@ void ClusterBuilder::Build3DClusters() {
       // only push back 3d clusters with depth more or equal than 2..
       if (cluster3d.depth >= 2) clusters3d.push_back(cluster3d);
     }
-
   }  // building
 
-  if (debug) {
-    cout << "\nAfter building, found 3d clusters" << endl;
-    for (auto &c : clusters3d) c.Print3d();
-  }
-
+  if(debug)
+    cout << " done with building " << endl;
+  
   // post-process
   for (auto &c : clusters3d) {
+    if(debug) {
+      c.Print3d();
+    }
     c.e = 0;
     c.x = 0;
     c.y = 0;
@@ -488,6 +485,9 @@ void ClusterBuilder::Build3DClusters() {
     c.strips_evenlayer.clear();
     for (auto c2 : c.clusters2d) {
       c.e += c2.e;
+      if (debug) {
+	c2.Print();
+      }
       double energy = c2.e;
       double w = std::max(0., energy);
       if (energy_weight_ == 1) {
@@ -510,6 +510,7 @@ void ClusterBuilder::Build3DClusters() {
         c.strips.push_back(hit.strip);
       }
     }
+    
     // sort cluster strips
     sort(c.strips_evenlayer.begin(), c.strips_evenlayer.end());
     c.strips_evenlayer.erase(
