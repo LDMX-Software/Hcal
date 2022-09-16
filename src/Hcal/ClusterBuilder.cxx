@@ -490,16 +490,32 @@ void ClusterBuilder::Build3DClusters() {
 	c2.Print();
       }
       double energy = c2.e;
-      //double w = 1;
+      // double w = 1;
       double w = std::max(0., energy);
       if (energy_weight_ == 1) {
         double w = std::max(0., log(c2.e / MIN_ENERGY_));
       }
-      c.x += c2.x * w;
-      c.y += c2.y * w;
+      if (use_toa_) {
+	// if using TOA information
+	// only estimate the x position from vertical layers (even for v13!)
+	// and only estimate the y position from horizontal layers (odd for v13!)
+	// NOTE: Change to depend on geometry parity..
+	if(c2.layer % 2 == 0) {
+	  c.x += c2.x * w;
+	  c.xx += c2.x * c2.x * w;
+	}
+	else {
+	  c.y += c2.y * w;
+	  c.yy += c2.y * c2.y * w;
+	}
+      }
+      else {
+	c.x += c2.x * w;
+	c.y += c2.y * w;
+	c.xx += c2.x * c2.x * w;
+	c.yy += c2.y * c2.y * w;
+      }
       c.z += c2.z * w;
-      c.xx += c2.x * c2.x * w;
-      c.yy += c2.y * c2.y * w;
       c.zz += c2.z * c2.z * w;
       sumw += w;
       for (const auto &hit : c2.hits) {
@@ -525,7 +541,6 @@ void ClusterBuilder::Build3DClusters() {
 
     // position
     c.x /= sumw;
-    // cout << "x: " << c.x << endl;
     c.y /= sumw;
     c.z /= sumw;
     c.xx /= sumw;  // now is <x^2>
