@@ -25,6 +25,10 @@ parser.add_argument('--particle',type=str,
 parser.add_argument('--config',type=str,
                     choices=possible_configs,
                     required=True)
+parser.add_argument('--x',type=float,
+                    default=100.)
+parser.add_argument('--y',type=float,
+                    default=100.)
 parser.add_argument('--energy-max',type=float,
                     default=None)
 parser.add_argument('--npart',type=int,
@@ -52,20 +56,21 @@ sim.beamSpotSmear = [20., 80., 0.] #mm
 # sim.verbosity = 1
 
 z_back_hcal = 870.
+#z_back_hcal = 690.6
 
 from gps_cmds import *
 if "gps" in config:
     gpsCmds = []
     if config=="mono_gps":
-        gpsCmds = get_monoenergy_5deg20(1000.,1000.,z_back_hcal,energy,particle)
+        gpsCmds = get_monoenergy_5deg20(arg.x,arg.y,z_back_hcal,energy,particle)
         if npart==2:
             gpsCmds += ["/gps/source/multiplevertex true"]
-            gpsCmds += get_monoenergy_5deg20(-1000.,-1000.,z_back_hcal,energy,particle)
+            gpsCmds += get_monoenergy_5deg20(-(arg.x),-(arg.y),z_back_hcal,energy,particle)
     elif config=="gps" and energy_max is not None:
-        gpsCmds = get_distenergy_5deg20(1000.,1000.,z_back_hcal,energy,energy_max,particle)
+        gpsCmds = get_distenergy_5deg20(arg.x,arg.y,z_back_hcal,energy,energy_max,particle)
         if npart==2:
              gpsCmds += ["/gps/source/multiplevertex true"]
-             gpsCmds = get_distenergy_5deg20(-1000.,-1000.,z_back_hcal,energy,energy_max,particle)
+             gpsCmds = get_distenergy_5deg20(-arg.x,-arg.y,z_back_hcal,energy,energy_max,particle)
              
     myGPS = generators.gps( 'myGPS' , gpsCmds )
     print(myGPS)
@@ -92,12 +97,23 @@ geom = EcalGeometry.EcalGeometryProvider.getInstance()
 from LDMX.Hcal import HcalGeometry
 geom = HcalGeometry.HcalGeometryProvider.getInstance()
 import LDMX.Hcal.hcal_hardcoded_conditions
+import LDMX.Ecal.ecal_hardcoded_conditions
+
 digit = hcal_digi.HcalDigiProducer()
 recon = hcal_digi.HcalRecProducer()
 
-import LDMX.Ecal.ecal_hardcoded_conditions
 p.sequence.extend([
     ecal_digi.EcalDigiProducer(),
     ecal_digi.EcalRecProducer(),
-    digit,recon
+    digit,
+    recon,
 ])
+
+p.keep = [
+    "keep HcalScoringPlaneHits.*",
+    "keep EcalScoringPlaneHits.*",
+    "drop HcalSimHits.*",
+    "drop EcalSimHits.*",
+    "drop HcalDigis.*",
+    "drop EcalDigis.*",
+]
