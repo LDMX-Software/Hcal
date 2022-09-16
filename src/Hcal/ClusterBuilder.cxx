@@ -204,8 +204,8 @@ std::vector<Cluster> ClusterBuilder::Build2DClustersPerLayer(
         auto hit = h;
         c.e += h.e;
         double energy = h.e;
-	double w = 1;
-        // double w = std::max(0., energy);
+	//double w = 1;
+        double w = std::max(0., energy);
         if (energy_weight_ == 1) {
           double w = std::max(0., log(c.e / MIN_ENERGY_));
         }
@@ -490,8 +490,8 @@ void ClusterBuilder::Build3DClusters() {
 	c2.Print();
       }
       double energy = c2.e;
-      double w = 1;
-      // double w = std::max(0., energy);
+      //double w = 1;
+      double w = std::max(0., energy);
       if (energy_weight_ == 1) {
         double w = std::max(0., log(c2.e / MIN_ENERGY_));
       }
