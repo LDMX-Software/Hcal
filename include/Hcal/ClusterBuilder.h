@@ -208,6 +208,11 @@ namespace hcal {
 
     // check distance between hits
     bool isStripNeighbor(Hit h1, Hit h2, double max_xy) {
+      // NOTE: Avoiding hits with weird distances due to buggy TOA for now  
+      if ( (fabs(h1.x) >= 3100.) || (fabs(h1.y) >= 3100.) || (fabs(h2.x) >= 3100.) || (fabs(h2.y) >= 3100.) ) {
+	return false;
+      }
+      
       float d = sqrt(pow(h1.x - h2.x, 2) +
 		     pow(h1.y - h2.y, 2));
       if (d > max_xy) {
