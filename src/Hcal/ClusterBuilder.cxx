@@ -480,7 +480,9 @@ void ClusterBuilder::Build3DClusters() {
     c.xx = 0;
     c.yy = 0;
     c.zz = 0;
-    float sumw = 0;
+    double sumw = 0;
+    double sumw_x = 0;
+    double sumw_y = 0;
     c.hits.clear();
     c.strips_oddlayer.clear();
     c.strips_evenlayer.clear();
@@ -503,10 +505,12 @@ void ClusterBuilder::Build3DClusters() {
 	if(c2.layer % 2 == 0) {
 	  c.x += c2.x * w;
 	  c.xx += c2.x * c2.x * w;
+	  sumw_x+=w;
 	}
 	else {
 	  c.y += c2.y * w;
 	  c.yy += c2.y * c2.y * w;
+	  sumw_y+=w;
 	}
       }
       else {
@@ -514,6 +518,8 @@ void ClusterBuilder::Build3DClusters() {
 	c.y += c2.y * w;
 	c.xx += c2.x * c2.x * w;
 	c.yy += c2.y * c2.y * w;
+	sumw_x+=w;
+	sumw_y+=w;
       }
       c.z += c2.z * w;
       c.zz += c2.z * c2.z * w;
@@ -540,8 +546,14 @@ void ClusterBuilder::Build3DClusters() {
         c.strips_oddlayer.end());
 
     // position
-    c.x /= sumw;
-    c.y /= sumw;
+    if(use_toa_){
+      c.x /= sumw_x;
+      c.y /= sumw_y;
+    }
+    else{
+      c.x /= sumw;
+      c.y /= sumw;
+    }
     c.z /= sumw;
     c.xx /= sumw;  // now is <x^2>
     c.yy /= sumw;
