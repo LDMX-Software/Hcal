@@ -502,16 +502,16 @@ void ClusterBuilder::Build3DClusters() {
 	// only estimate the x position from vertical layers (even for v13!)
 	// and only estimate the y position from horizontal layers (odd for v13!)
 	// NOTE: Change to depend on geometry parity..
-	if(c2.layer % 2 == 0) {
-	  c.x += c2.x * w;
-	  c.xx += c2.x * c2.x * w;
-	  sumw_x+=w;
-	}
-	else {
-	  c.y += c2.y * w;
-	  c.yy += c2.y * c2.y * w;
-	  sumw_y+=w;
-	}
+	//if(c2.layer % 2 == 0) {
+	c.x += c2.x * w;
+	c.xx += c2.x * c2.x * w;
+	sumw_x+=w;
+	//}
+	//else {
+	c.y += c2.y * w;
+	c.yy += c2.y * c2.y * w;
+	sumw_y+=w;
+	//}
       }
       else {
 	c.x += c2.x * w;
