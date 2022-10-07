@@ -75,7 +75,21 @@ void HcalNewClusterProducer::produce(framework::Event& event) {
     cluster.setCentroidXYZ(c.x, c.y, c.z);
     cluster.setRMSXYZ(c.xx, c.yy, c.zz);
     cluster.addStrips(c.strips);
-
+    cluster.addStripsPerLayer(c.strips_per_layer);
+    /*
+    for (unsigned int l=0; l < c.strips_per_layer.size(); l++) {                                                                                                                                                                            
+      for (auto strip : c.strips_per_layer.at(l)) {                                                                                                                                                                                         
+	std::cout << " l " << l << " s " << strip << std::endl;                                                                                                                                                                                     }                                                                                                                                                                                                                                    
+    }
+    std::cout << " ere " << std::endl;
+    auto strips_per_layer = cluster.getStripsPerLayer();
+    for (unsigned int l=0; l < strips_per_layer.size(); l++) {
+      for (auto strip : strips_per_layer.at(l)) {
+        std::cout << " l " << l << " s " << strip << std::endl;
+       }		
+    }
+    */
+       
     cluster.setStripsOdd(c.strips_oddlayer);
     cluster.setStripsEven(c.strips_evenlayer);
 

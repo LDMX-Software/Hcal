@@ -16,6 +16,7 @@ ClassImp(ldmx::HcalCluster)
   void HcalCluster::Clear() {
     hitIDs_.clear();
     strips_.clear();
+    strips_per_layer_.clear();
     energy_ = 0;
     nHits_ = 0;
     n2D_ = 0;
@@ -47,5 +48,23 @@ ClassImp(ldmx::HcalCluster)
       }
     }
   }
+
+  void HcalCluster::addStripsPerLayer(const std::vector<std::vector<int>> stripsVec) {
+    // strips_per_layer_.clear();
+    std::vector<std::vector<int>> strips_per_layer(100);
+    for (unsigned int layer=0; layer < stripsVec.size(); layer++) {
+      for (auto strip : stripsVec.at(layer)) {
+	strips_per_layer.at(layer).push_back(strip);
+      }
+    }
+    strips_per_layer_ = strips_per_layer;
+    // for (unsigned int l=0; l < strips_per_layer_.size(); l++) {
+    //   for (auto strip : strips_per_layer_.at(l)) {
+    // 	std::cout << " l " << l << " s " << strip << std::endl;
+    //   }
+    // }
+    
+  }
+      
 
 }  // namespace ldmx

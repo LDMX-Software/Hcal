@@ -90,6 +90,8 @@ namespace hcal {
     std::vector<int> strips_evenlayer;
     std::vector<Cluster> clusters2d; // for 3d
 
+    std::vector<std::vector<int>> strips_per_layer;
+    
     float x=0;
     float y=0;
     float z=0;

@@ -80,6 +80,8 @@ class HcalCluster {
    */
   void addStrips(const std::vector<int> stripsVec);
 
+  void addStripsPerLayer(const std::vector<std::vector<int>> stripsVec);
+
   void setStripsOdd(const std::vector<int> stripsVec) {
     strips_odd_layer_ = stripsVec.size();
   }
@@ -156,6 +158,8 @@ class HcalCluster {
   // get strips
   const std::vector<int>& getStrips() const { return strips_; }
 
+  const std::vector< std::vector<int >> & getStripsPerLayer() const { return strips_per_layer_; }
+  
   int getOddLayerStrips() const { return strips_odd_layer_; }
 
   int getEvenLayerStrips() const { return strips_even_layer_; }
@@ -166,6 +170,7 @@ class HcalCluster {
 
  private:
   std::vector<unsigned int> hitIDs_;
+  std::vector<std::vector<int>> strips_per_layer_;
   std::vector<int> strips_;
   double energy_{0};
   double seedenergy_{0};

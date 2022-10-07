@@ -486,6 +486,9 @@ void ClusterBuilder::Build3DClusters() {
     c.hits.clear();
     c.strips_oddlayer.clear();
     c.strips_evenlayer.clear();
+
+    std::vector<std::vector<int>> s_perlayer(100);
+    
     for (auto c2 : c.clusters2d) {
       c.e += c2.e;
       if (debug) {
@@ -532,7 +535,9 @@ void ClusterBuilder::Build3DClusters() {
           c.strips_oddlayer.push_back(hit.strip);
         }
         c.strips.push_back(hit.strip);
+	s_perlayer.at(hit.layer).push_back(hit.strip);
       }
+      c.strips_per_layer = s_perlayer;
     }
     
     // sort cluster strips
