@@ -9,27 +9,16 @@ project(Hcal VERSION 2.1.0
 )
 
 
-# Search and configure ROOT
-find_package(ROOT CONFIG REQUIRED)
-
-option(BUILD_EVENT_ONLY "Build the event library." ON)
 if(BUILD_EVENT_ONLY)
-  
-  register_event_object( module_path "Hcal/Event" namespace "ldmx" class "HcalVetoResult" )
-  register_event_object( module_path "Hcal/Event" namespace "ldmx" class "HcalHit" type "collection")
-  register_event_object( module_path "Hcal/Event" namespace "ldmx" class "HcalCluster" type "collection")
-  # Generate the files needed to build the event classes.
-  setup_library(module Hcal
-                name Event
-                dependencies ROOT::Core Recon::Event
-                register_target)
+  setup_event_library(module Hcal name Event
+    linkdef include/Hcal/Event/LinkDef.h
+    dependencies Recon::Event)
   return()
-
 endif()
 
 setup_library(module Hcal
               dependencies ROOT::Physics 
-              Framework::Framework Recon::Event Tools::Tools DetDescr::DetDescr 
+              Framework::Framework Hcal::Event Tools::Tools DetDescr::DetDescr 
 )
 
 setup_python(package_name ${PYTHON_PACKAGE_NAME}/Hcal)
