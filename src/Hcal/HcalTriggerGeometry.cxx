@@ -5,7 +5,6 @@
 
 #include "DetDescr/HcalGeometry.h"
 #include "Framework/ConditionsObjectProvider.h"
-#include "Framework/EventHeader.h"
 
 namespace hcal {
 

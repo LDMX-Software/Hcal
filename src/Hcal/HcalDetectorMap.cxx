@@ -3,7 +3,6 @@
 #include <sstream>
 
 #include "Framework/ConditionsObjectProvider.h"
-#include "Framework/EventHeader.h"
 
 namespace hcal {
 

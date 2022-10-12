@@ -22,8 +22,9 @@
 #include "DetDescr/HcalDigiID.h"
 #include "DetDescr/HcalGeometry.h"
 #include "DetDescr/HcalID.h"
-#include "Framework/EventDef.h"
 #include "Framework/EventProcessor.h"
+#include "Recon/Event/HgcrocDigiCollection.h"
+#include "Hcal/Event/HcalHit.h"
 
 //---------//
 //  ROOT   //

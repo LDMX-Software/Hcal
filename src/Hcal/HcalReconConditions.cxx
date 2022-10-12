@@ -1,7 +1,6 @@
 #include "Hcal/HcalReconConditions.h"
 
 #include "Framework/ConditionsObjectProvider.h"
-#include "Framework/EventHeader.h"
 
 namespace hcal {
 

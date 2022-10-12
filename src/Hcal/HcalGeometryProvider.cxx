@@ -3,8 +3,7 @@
 
 #include "DetDescr/HcalGeometry.h"
 #include "Framework/ConditionsObjectProvider.h"
-#include "Framework/EventHeader.h"
-#include "Framework/RunHeader.h"
+#include "Framework/Logger.h"
 
 /**
  * @file HcalGeometryProvider.cxx
