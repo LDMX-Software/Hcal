@@ -8,9 +8,10 @@
 #ifndef EVENT_HCALCLUSTER_H_
 #define EVENT_HCALCLUSTER_H_
 
+#include <fire/io/Access.h>
+
 // ROOT
 #include "TObject.h"  //For ClassDef
-#include "TString.h"
 
 // STL
 #include <iostream>
@@ -45,7 +46,7 @@ class HcalCluster {
   /**
    * Reset the HcalCluster object.
    */
-  void Clear();
+  void clear();
 
   /**
    * Take in the hits that make up the cluster.
@@ -113,6 +114,18 @@ class HcalCluster {
   double centroidY_{0};
   double centroidZ_{0};
   double time_{0};
+
+  friend class fire::io::access;
+  template<typename Data>
+  void attach(Data& d) {
+    d.attach("hitIDs", hitIDs_);
+    d.attach("energy", energy_);
+    d.attach("nHits", nHits_);
+    d.attach("centroidX", centroidX_);
+    d.attach("centroidY", centroidY_);
+    d.attach("centroidZ", centroidZ_);
+    d.attach("time", time_);
+  }
 
   ClassDef(HcalCluster, 1);
 };

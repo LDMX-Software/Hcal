@@ -5,7 +5,7 @@ ClassImp(ldmx::HcalCluster)
     namespace ldmx {
   HcalCluster::HcalCluster() {}
 
-  HcalCluster::~HcalCluster() { Clear(); }
+  HcalCluster::~HcalCluster() { clear(); }
 
   void HcalCluster::Print() const {
     std::cout << "HcalCluster { "
@@ -13,7 +13,7 @@ ClassImp(ldmx::HcalCluster)
               << "Number of hits: " << nHits_ << " }" << std::endl;
   }
 
-  void HcalCluster::Clear() {
+  void HcalCluster::clear() {
     hitIDs_.clear();
     energy_ = 0;
     nHits_ = 0;

@@ -7,6 +7,8 @@
 #ifndef HCAL_EVENT_HCALHIT_H_
 #define HCAL_EVENT_HCALHIT_H_
 
+#include <fire/io/Access.h>
+
 // LDMX
 #include "Recon/Event/CalorimeterHit.h"
 
@@ -35,7 +37,7 @@ class HcalHit : public ldmx::CalorimeterHit {
   /**
    * Clear the data in the object.
    */
-  void Clear();
+  void clear();
 
   /**
    * Print out the object.
@@ -147,6 +149,19 @@ class HcalHit : public ldmx::CalorimeterHit {
 
   /// isADC
   int isADC_;
+
+  friend class fire::io::access;
+  template<typename Data>
+  void attach(Data& d) {
+    CalorimeterHit::attach(d);
+    d.attach("pe", pe_);
+    d.attach("minpe", minpe_);
+    d.attach("section", section_);
+    d.attach("layer", layer_);
+    d.attach("strip", strip_);
+    d.attach("end", end_);
+    d.attach("isADC", isADC_);
+  }
 
   /**
    * The ROOT class definition.

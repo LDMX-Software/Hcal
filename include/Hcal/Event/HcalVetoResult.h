@@ -8,6 +8,8 @@
 #ifndef HCAL_EVENT_HCALVETORESULT_H_
 #define HCAL_EVENT_HCALVETORESULT_H_
 
+#include <fire/io/Access.h>
+
 //----------//
 //   ROOT   //
 //----------//
@@ -29,7 +31,7 @@ class HcalVetoResult {
   ~HcalVetoResult();
 
   /** Reset the object. */
-  void Clear();
+  void clear();
 
   /** Print out the object */
   void Print() const;
@@ -64,6 +66,13 @@ class HcalVetoResult {
 
   /** Flag indicating whether the event passes the Hcal veto. */
   bool passesVeto_{false};
+
+  friend class fire::io::access;
+  template<typename Data>
+  void attach(Data& d) {
+    d.attach("maxPEHit", maxPEHit_);
+    d.attach("passesVeto", passesVeto_);
+  }
 
   ClassDef(HcalVetoResult, 2);
 

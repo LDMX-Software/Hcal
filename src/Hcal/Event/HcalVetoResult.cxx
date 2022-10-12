@@ -17,7 +17,7 @@ ClassImp(ldmx::HcalVetoResult)
 
   HcalVetoResult::~HcalVetoResult() {}
 
-  void HcalVetoResult::Clear() { passesVeto_ = false; }
+  void HcalVetoResult::clear() { passesVeto_ = false; }
 
   void HcalVetoResult::Print() const {
     std::cout << "[ HcalVetoResult ]: Passes veto : "
