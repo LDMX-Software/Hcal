@@ -4,6 +4,7 @@
 
 #include "Conditions/SimpleTableCondition.h"
 #include "DetDescr/HcalDigiID.h"
+#include "Framework/ConditionsObject.h"
 
 namespace hcal {
 

@@ -17,8 +17,9 @@ if(BUILD_EVENT_ONLY)
 endif()
 
 setup_library(module Hcal
-              dependencies ROOT::Physics 
-              Framework::Framework Hcal::Event Tools::Tools DetDescr::DetDescr 
+              dependencies ROOT::Physics Framework::Framework 
+              Hcal::Event Ecal::Event
+              Tools::Tools DetDescr::DetDescr 
 )
 
 setup_python(package_name ${PYTHON_PACKAGE_NAME}/Hcal)
