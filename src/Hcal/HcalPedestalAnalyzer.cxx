@@ -2,26 +2,26 @@
  */
 
 #include "DetDescr/HcalDigiID.h"
-#include "Framework/EventProcessor.h"
+
+#include <fire/Processor.h>
+
 #include "Recon/Event/HgcrocDigiCollection.h"
 
 namespace hcal {
 
-class HcalPedestalAnalyzer : public framework::Analyzer {
+class HcalPedestalAnalyzer : public fire::Processor {
   std::string input_name_, input_pass_;
   std::string output_file_, comments_;
-  bool make_histos_;
+  bool store_filtered_adcs_;
   bool filter_noTOT;
   bool filter_noTOA;
   int low_cutoff_, high_cutoff_;
 
   struct Channel {
-    Channel() : hist{0}, sum{0}, sum_sq{0}, entries{0}, rejects{4, 0} {}
+    Channel() : sum{0}, sum_sq{0}, entries{0}, rejects{4, 0} {}
     /// collection of hits accumulated to produce appropriately-binned
     /// histograms
     std::vector<int> adcs;
-    /// Histogram, if used
-    TH1* hist;
     /// Sum of values
     uint64_t sum;
     /// Sum of values squared
@@ -37,37 +37,34 @@ class HcalPedestalAnalyzer : public framework::Analyzer {
   void create_and_fill(Channel& chan, ldmx::HcalDigiID detid);
 
  public:
-  HcalPedestalAnalyzer(const std::string& n, framework::Process& p)
-      : framework::Analyzer(n, p) {}
-  ~HcalPedestalAnalyzer() {}
+  HcalPedestalAnalyzer(const fire::config::Parameters& ps)
+    : fire::Processor(ps) {
+    input_name_ = ps.get<std::string>("input_name");
+    input_pass_ = ps.get<std::string>("input_pass");
+    output_file_ = ps.get<std::string>("output_file");
+    comments_ = ps.get<std::string>("comments");
 
-  void configure(framework::config::Parameters& ps) final override {
-    input_name_ = ps.getParameter<std::string>("input_name");
-    input_pass_ = ps.getParameter<std::string>("input_pass");
-    output_file_ = ps.getParameter<std::string>("output_file");
-    comments_ = ps.getParameter<std::string>("comments");
-
-    make_histos_ = ps.getParameter<bool>("make_histos", false);
-
-    filter_noTOT = ps.getParameter<bool>("filter_noTOT", true);
-    filter_noTOA = ps.getParameter<bool>("filter_noTOA", true);
-    low_cutoff_ = ps.getParameter<int>("low_cutoff", 10);
-    high_cutoff_ = ps.getParameter<int>("high_cutoff", 512);
+    store_filtered_adcs_ = ps.get<bool>("store_filtered_adcs", false);
+    filter_noTOT = ps.get<bool>("filter_noTOT", true);
+    filter_noTOA = ps.get<bool>("filter_noTOA", true);
+    low_cutoff_ = ps.get<int>("low_cutoff", 10);
+    high_cutoff_ = ps.get<int>("high_cutoff", 512);
   }
 
-  virtual void analyze(const framework::Event& event);
+  virtual void process(fire::Event& event) final override;
   virtual void onProcessEnd();
 };
 
-void HcalPedestalAnalyzer::analyze(const framework::Event& event) {
+void HcalPedestalAnalyzer::process(fire::Event& event) {
   auto const& digis{
-      event.getObject<ldmx::HgcrocDigiCollection>(input_name_, input_pass_)};
+      event.get<ldmx::HgcrocDigiCollection>(input_name_, input_pass_)};
 
   for (std::size_t i_digi{0}; i_digi < digis.size(); i_digi++) {
     auto d{digis.getDigi(i_digi)};
     ldmx::HcalDigiID detid(d.id());
 
     Channel& chan = pedestal_data_[detid];
+    chan.adcs.clear();
 
     bool has_tot = false;
     bool has_toa = false;
@@ -100,36 +97,19 @@ void HcalPedestalAnalyzer::analyze(const framework::Event& event) {
       chan.sum += adc;
       chan.sum_sq += adc * adc;
       chan.entries++;
-      if (chan.hist)
-        chan.hist->Fill(adc);
-      else if (make_histos_)
-        chan.adcs.push_back(adc);
+      chan.adcs.push_back(adc);
     }
-
-    // histogram-related business
-    if (make_histos_ && !chan.hist && chan.entries > 250)
-      create_and_fill(chan, detid);
   }
-}
 
-void HcalPedestalAnalyzer::create_and_fill(Channel& chan,
-                                           ldmx::HcalDigiID detid) {
-  if (chan.entries == 0) return;
-
-  TDirectory* hdir = getHistoDirectory();
-  hdir->cd();
-  char hname[120];
-  sprintf(hname, "pedestal_%d_%d_%d_%d", detid.section(), detid.layer(),
-          detid.strip(), detid.end());
-  // logic: 100 bins to +/- 5 sigma based on first 250 events.
-  double mean = (chan.sum * 1.0) / chan.entries;
-  double rms = sqrt(chan.sum_sq / chan.entries - mean * mean);
-  if (rms * 5 < 50)
-    chan.hist = new TH1D(hname, hname, 30, int(mean) - 15, int(mean) + 15);
-  else
-    chan.hist = new TH1D(hname, hname, 100, mean - 5 * rms, mean + 5 * rms);
-  for (auto x : chan.adcs) chan.hist->Fill(x);
-  chan.adcs.clear();
+  if (store_filtered_adcs_) {
+    std::map<int,std::vector<int>> filtered_adcs;
+    for (auto& [id, chan] : pedestal_data_) {
+      if (chan.adcs.size() > 0) {
+        filtered_adcs[id.raw()] = chan.adcs;
+      }
+    }
+    event.add("FilteredADCs", filtered_adcs);
+  }
 }
 
 void HcalPedestalAnalyzer::onProcessEnd() {
@@ -163,4 +143,4 @@ void HcalPedestalAnalyzer::onProcessEnd() {
 
 }  // namespace hcal
 
-DECLARE_ANALYZER_NS(hcal, HcalPedestalAnalyzer);
+DECLARE_PROCESSOR(hcal::HcalPedestalAnalyzer);

@@ -8,6 +8,7 @@
 #include "Hcal/HcalRecProducer.h"
 
 #include "Hcal/HcalReconConditions.h"
+#include "SimCore/Event/SimCalorimeterHit.h"
 
 namespace hcal {
 
