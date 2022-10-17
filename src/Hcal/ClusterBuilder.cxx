@@ -40,11 +40,55 @@ ClusterGeometry::ClusterGeometry(ldmx::HcalGeometry hcalGeometry) {
   }    // end loop over pair1
 }
 
+void ClusterBuilder::ReBuild2DCluster(std::vector<Cluster> & clusters) {
+  for (auto &c : clusters) {
+    c.e = 0;
+    c.x = 0;
+    c.y = 0;
+    c.z = 0;
+    c.xx = 0;
+    c.yy = 0;
+    c.zz = 0;
+    double sumw = 0;
+    for (auto h : c.hits) {
+      auto hit = h;
+      c.e += h.e;
+      double energy = h.e;
+      //double w = 1;                                                                                                                                                                                       
+      double w = std::max(0., energy);
+      if (energy_weight_ == 1) {
+        double w = std::max(0., log(c.e / MIN_ENERGY_));
+      }
+      c.x += h.x * w;
+      c.y += h.y * w;
+      c.z += h.z * w;
+      c.xx += h.x * h.x * w;
+      c.yy += h.y * h.y * w;
+      c.zz += h.z * h.z * w;
+      sumw += w;
+    }
+    c.x /= sumw;
+    c.y /= sumw;
+    c.z /= sumw;
+    c.xx /= sumw;  // now is <x^2>                                                                                                                                                                          
+    c.yy /= sumw;
+    c.zz /= sumw;
+    c.xx = sqrt(c.xx - c.x * c.x);  // now is sqrt(<x^2>-<x>^2)                                                                                                                                             
+    c.yy = sqrt(c.yy - c.y * c.y);
+    c.zz = sqrt(c.zz - c.z * c.z);
+  }
+}
+
+  
 std::vector<Cluster> ClusterBuilder::Build2DClustersPerLayer(
     std::vector<Hit> hits) {
   // map hits by id
   std::map<int, Hit> hits_by_id;
-  for (auto &hit : hits) hits_by_id[hit.rawid] = hit;
+  std::map<int, Hit> hits_by_id_temp;
+  for (auto &hit : hits) {
+    hits_by_id[hit.rawid] = hit;
+    hits_by_id_temp[hit.rawid] = hit;
+  }
 
   // if(debug){
   //   cout << "--------\nBuild2DClustersLayer Input Hits" << endl;
@@ -52,11 +96,11 @@ std::vector<Cluster> ClusterBuilder::Build2DClustersPerLayer(
   //   cout << " ----- " << endl;
   // }
 
-  // find seeds
-  std::vector<Cluster> clusters;
+  // OLD ALGO
+  /*
   for (auto &hitpair : hits_by_id) {
     auto &hit = hitpair.second;
-
+    
     // find the local max between this hit and its neighboring strips
     bool isLocalMax = true;
     for (auto n : geom->strip_neighbors[hit.rawid]) {
@@ -64,27 +108,27 @@ std::vector<Cluster> ClusterBuilder::Build2DClustersPerLayer(
       if (!hits_by_id.count(n)) {
         continue;
       }
-
+      
       // if neigboring hit is not a real neighbor, it can not be used for
       // computing the local max
       if (use_toa_ && !isStripNeighbor(hits_by_id[n], hit, max_xy_2d_)) {
         continue;
       }
-
+      
       // check if neighboring hit has larger energy deposits
       if (hits_by_id[n].e > hit.e && hits_by_id[n].rawid != hit.rawid) {
         isLocalMax = false;
       }
     }
-
+    
     if (isLocalMax && (hit.e > seed_threshold_2d_) && !hit.used) {
       hit.used = true;
-
+      
       // if(debug) {
       //   cout << " This hit is local max " << endl;
       //   hit.Print();
       // }
-
+      
       // TODO: add time information?
       Cluster c;
       c.hits.push_back(hit);
@@ -99,14 +143,14 @@ std::vector<Cluster> ClusterBuilder::Build2DClustersPerLayer(
       clusters.push_back(c);
     }
   }  // end loop over hits by ID
-
+  
   if (debug) {
     // cout << "Hits after seed finding: " << endl;
     // for(auto &hitpair : hits_by_id) hitpair.second.Print();
     cout << "\n2D: Seed clusters" << endl;
     for (auto &c : clusters) c.Print();
   }
-
+  
   // add neighbors up to the specified limit
   int i_neighbor = 0;
   while (i_neighbor < num_neighbors_) {
@@ -130,7 +174,7 @@ std::vector<Cluster> ClusterBuilder::Build2DClustersPerLayer(
               }
               continue;
             }
-
+	    
             neighbors.push_back(n);
             unused_hits++;
           }
@@ -138,12 +182,12 @@ std::vector<Cluster> ClusterBuilder::Build2DClustersPerLayer(
       }
       assoc_clus2hitIDs[iclus] = neighbors;
     }
-
+    
     if (unused_hits == 0) {
       // cout << "unused hits 0 " << endl;
       break;
     }
-
+    
     // check to how many clusters, each hit is associated to
     std::map<int, std::vector<int> > assoc_hitID2clusters;
     for (auto clus2hitID : assoc_clus2hitIDs) {
@@ -156,7 +200,7 @@ std::vector<Cluster> ClusterBuilder::Build2DClustersPerLayer(
           assoc_hitID2clusters[hitID] = {iclus};
       }
     }
-
+    
     // add associated hits to clusters
     for (auto hitID2clusters : assoc_hitID2clusters) {
       auto hitID = hitID2clusters.first;
@@ -188,54 +232,135 @@ std::vector<Cluster> ClusterBuilder::Build2DClustersPerLayer(
         clusters[maxE_idx].e += hit.e;
       }
     }
+    ReBuild2DCluster(clusters);
+    i_neighbor++;
+  }
+  */
+    
+  // 2D algo
+  // while (nhits_to_cluster > 0) {
+  //  - find the highest energy hit as seed
+  //  - loop for neighbor < num_neighbors
+  //    - find neighboring strips to the hits in the current cluster
+  //      and use those that are below max_xy_2d distance, if using TOA
+  //    - erase the hits used from hits_to_cluster
+  //  - try to find a next seed if not all the hits have been used
+  // }
+  
+  std::vector<Cluster> clusters;
 
-    // rebuild cluster properties based on the new hits
-    // do energy weighting here
-    for (auto &c : clusters) {
-      c.e = 0;
-      c.x = 0;
-      c.y = 0;
-      c.z = 0;
-      c.xx = 0;
-      c.yy = 0;
-      c.zz = 0;
-      double sumw = 0;
-      for (auto h : c.hits) {
-        auto hit = h;
-        c.e += h.e;
-        double energy = h.e;
-	//double w = 1;
-        double w = std::max(0., energy);
-        if (energy_weight_ == 1) {
-          double w = std::max(0., log(c.e / MIN_ENERGY_));
-        }
-        c.x += h.x * w;
-        c.y += h.y * w;
-        c.z += h.z * w;
-        c.xx += h.x * h.x * w;
-        c.yy += h.y * h.y * w;
-        c.zz += h.z * h.z * w;
-        sumw += w;
+  int iclus = 0;
+  while(!hits_by_id_temp.empty()) {
+
+    // convert map to vector
+    std::vector<Hit> dhits;
+    MapToVec(hits_by_id_temp, dhits);
+      
+    // get hit with highest energy as seed
+    ESort(dhits);
+    auto & seed = dhits.at(0);
+
+    Cluster c;
+    if (seed.e > seed_threshold_2d_ ) {
+      hits_by_id[seed.rawid].used = true;
+      hits_by_id_temp.erase(seed.rawid);
+      c.hits.push_back(seed);
+      c.e = seed.e;
+      c.x = seed.x;
+      c.y = seed.y;
+      c.z = seed.z;
+      c.seed = seed.rawid;
+      c.layer = seed.layer;
+      c.section = seed.section;
+      c.strips.push_back(seed.strip);
+    }
+    else {
+      break;
+    }
+      
+    // add hits to cluster neighbors
+    int i_neighbor = 0;    
+    while (i_neighbor < num_neighbors_) {
+      int num_added = 0;
+      for (const auto &hit : c.hits) {
+	for (auto n : geom->strip_neighbors[hit.rawid]) {
+	  if (hits_by_id.count(n) &&
+	      !hits_by_id[n].used &&
+	      hits_by_id[n].e > neighbor_threshold_2d_) {
+	    
+	    // if using TOA information, use the xy distance
+	    // to further prune the neighbors to the seed 2d clusters
+	    if (use_toa_ && !isStripNeighbor(hits_by_id[n], hit, max_xy_2d_)) {
+	      if (debug) {
+		cout << "  The following hit is discarded because the TOA xy distance is less than max_xy_2d_:" << endl;
+		hits_by_id[n].Print();
+	      }
+	      continue;
+	    }
+	    
+	    hits_by_id[n].used = true;
+	    c.hits.push_back(hits_by_id[n]);
+
+	    hits_by_id_temp.erase(n);
+	    num_added++;
+	  }
+	}
       }
-      c.x /= sumw;
-      c.y /= sumw;
-      c.z /= sumw;
-      c.xx /= sumw;  // now is <x^2>
-      c.yy /= sumw;
-      c.zz /= sumw;
-      c.xx = sqrt(c.xx - c.x * c.x);  // now is sqrt(<x^2>-<x>^2)
-      c.yy = sqrt(c.yy - c.y * c.y);
-      c.zz = sqrt(c.zz - c.z * c.z);
+      i_neighbor++;
+      if(num_added==0) break;
     }
 
-    i_neighbor++;
-  }  // neighbor loop
+    iclus++;
+    clusters.push_back(c);
+  }
+  
+  // rebuild cluster properties based on the new hits
+  // do energy weighting here
+  ReBuild2DCluster(clusters);
 
   if (debug) {
-    cout << "\nFinal hits and clusters after " << i_neighbor << " neighbors"
-         << endl;
+    cout << "\n Preliminary hits and clusters " << endl;
     for (auto &hitpair : hits_by_id) hitpair.second.Print();
     for (auto &c : clusters) c.Print();
+  }
+
+  if(clusters.size() > 0) {
+    // see if its possible to combine clusters
+    std::map<int, int> cluster_match;
+    for (size_t i = 0; i < clusters.size()-1; ++i) {
+      cluster_match[i] = i;
+      for (size_t j = i+1; j < clusters.size(); ++j) {
+	if(i!=j) {
+	  double distance = sqrt(pow(clusters.at(i).y - clusters.at(j).y, 2) + pow(clusters.at(i).y - clusters.at(j).y,2) );
+	  if(distance <= max_xy_2d_merge_) {
+	    if(debug) {
+	      cout << "distance between cluster indices "<< i << " " << j << " is: " << distance << " and below " << max_xy_2d_merge_ << " merging.." << endl;
+	    }
+	    cluster_match[j] = i;
+	  }
+	  else 
+	    cluster_match[j] = j;
+	}
+      }
+    }
+
+    // build a map w cluster index, and hits
+    for(auto clus : cluster_match) {
+      if(clus.second != clus.first) {
+	auto icluster = clusters.at(clus.first);
+	for(auto hit: icluster.hits) 
+	  clusters.at(clus.second).hits.push_back(hit);
+	clusters.erase(clusters.begin() + clus.first);
+      }
+    }
+    
+    // rebuild clusters
+    ReBuild2DCluster(clusters);
+    if (debug) {
+      cout << "\nRe-defined hits and clusters " << endl;
+      for (auto &hitpair : hits_by_id) hitpair.second.Print();
+      for (auto &c : clusters) c.Print();
+    }
   }
 
   return clusters;
@@ -250,6 +375,10 @@ void ClusterBuilder::Build2DClusters() {
     for (const auto hit : all_hits) {
       auto l = hit.layer;
       if (hit.section != section) continue;
+
+      // if not using TOA, only consider hits from a given layer parity..
+      if(!use_toa_ && (l%2)!=layer_parity_) continue;
+      
       if (layer_hits.count(l)) {
         layer_hits[l].push_back(hit);
       } else {
@@ -268,7 +397,7 @@ void ClusterBuilder::Build2DClusters() {
       all_clusters.insert(all_clusters.end(), clus.begin(), clus.end());
     }
   }
-
+  
   // sort by energy
   clusters_2d = all_clusters;
   ESort(clusters_2d);

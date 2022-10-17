@@ -21,8 +21,10 @@ void HcalNewClusterProducer::configure(framework::config::Parameters& p) {
   seed_threshold_3d_ = p.getParameter<double>("seed_threshold_3d");
   neighbor_threshold_3d_ = p.getParameter<double>("neighbor_threshold_3d");
   max_xy_2d_ = p.getParameter<double>("max_xy_2d");
+  max_xy_2d_merge_ = p.getParameter<double>("max_xy_2d_merge");
   max_xy_3d_ = p.getParameter<double>("max_xy_3d");
   use_toa_ = p.getParameter<bool>("use_toa");
+  layer_parity_ = p.getParameter<int>("layer_parity");
 }
 
 void HcalNewClusterProducer::produce(framework::Event& event) {
@@ -37,8 +39,8 @@ void HcalNewClusterProducer::produce(framework::Event& event) {
   builder.SetThresholds2D(seed_threshold_2d_, neighbor_threshold_2d_);
   builder.SetThresholds3D(seed_threshold_3d_, neighbor_threshold_3d_);
   builder.SetNeighbors(num_neighbors_);
-  builder.SetMaxXY(max_xy_2d_, max_xy_3d_);
-  builder.SetTOA(use_toa_);
+  builder.SetMaxXY(max_xy_2d_, max_xy_3d_, max_xy_2d_merge_);
+  builder.SetTOA(use_toa_, layer_parity_);
   builder.SetClusterGeo(&clusterGeometry);
   for (auto const& h : hcalRecHits) {
     // quality cuts for hits entering clustering
@@ -76,20 +78,7 @@ void HcalNewClusterProducer::produce(framework::Event& event) {
     cluster.setRMSXYZ(c.xx, c.yy, c.zz);
     cluster.addStrips(c.strips);
     cluster.addStripsPerLayer(c.strips_per_layer);
-    /*
-    for (unsigned int l=0; l < c.strips_per_layer.size(); l++) {                                                                                                                                                                            
-      for (auto strip : c.strips_per_layer.at(l)) {                                                                                                                                                                                         
-	std::cout << " l " << l << " s " << strip << std::endl;                                                                                                                                                                                     }                                                                                                                                                                                                                                    
-    }
-    std::cout << " ere " << std::endl;
-    auto strips_per_layer = cluster.getStripsPerLayer();
-    for (unsigned int l=0; l < strips_per_layer.size(); l++) {
-      for (auto strip : strips_per_layer.at(l)) {
-        std::cout << " l " << l << " s " << strip << std::endl;
-       }		
-    }
-    */
-       
+
     cluster.setStripsOdd(c.strips_oddlayer);
     cluster.setStripsEven(c.strips_evenlayer);
 

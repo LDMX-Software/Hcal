@@ -25,6 +25,9 @@ clusters.neighbor_threshold_3d = 0.2 # MeV
 clusters.num_neighbors = 4 # number of neighboring strips
 clusters.max_xy_2d = 210. # mm 
 clusters.max_xy_3d = 1000. # mm
+clusters.max_xy_2d_merge = 200. #mm
+clusters.use_toa = True
+clusters.layer_parity = 1 # if its 1, odd layers
 
 p.sequence = [clusters]
 

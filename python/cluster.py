@@ -34,5 +34,8 @@ class HcalNewClusterProducer(ldmxcfg.Producer) :
         # max xy (mm)
         self.max_xy_2d = 3*50.
         self.max_xy_3d = 8*50.
-
+        self.max_xy_2d_merge = 4*50.;
+        
         self.use_toa = True
+        # if not using toa, only use odd layers
+        self.layer_parity = 1

@@ -30,10 +30,12 @@ class HcalNewClusterProducer : public framework::Producer {
   /// max xy
   double max_xy_2d_;
   double max_xy_3d_;
+  double max_xy_2d_merge_;
   /// number of 2D neighbors
   int num_neighbors_;
   /// whether to use TOA info or not
   bool use_toa_;
+  int layer_parity_;
   
  private:
 

@@ -102,7 +102,8 @@ namespace hcal {
     int seed=-1; // raw id of seed
     int layer=-1;
     int section=-1;
-    
+
+    bool used=false;
     bool is2D=true;
     int depth=0;
     int first_layer=-1;
@@ -157,10 +158,15 @@ namespace hcal {
     ClusterGeometry* geom;
 
     // debug
-    bool debug = false;
+    bool debug = true;
 
     // use TOA hit information or not
     bool use_toa_ = true;
+
+    // if not using TOA, consider only hits of a given parity
+    // i.e. if layer_parity_ ==1, we only consider hits in odd layers
+    //      if layer_parity_ ==0, we only consider hits in even layers
+    int layer_parity_ = 1;
     
     // energy thresholds
     double seed_threshold_2d_ = 0.1; // MeV
@@ -176,6 +182,7 @@ namespace hcal {
     // scint width = 50mm
     double max_xy_2d_ = 3*50; // mm
     double max_xy_3d_ = 6*50; // mm
+    double max_xy_2d_merge_ = 4*50.; // mm
     
     // maximum number of layers for a 3d cluster
     int layer_max_ = 100;
@@ -200,12 +207,14 @@ namespace hcal {
     void SetNeighbors ( int num_neighbors ) {
       num_neighbors_ = num_neighbors;
     }
-    void SetTOA( bool use_toa ) {
+    void SetTOA( bool use_toa, int layer_parity ) {
       use_toa_ = use_toa;
+      layer_parity_ = layer_parity;
     }
-    void SetMaxXY( double max_xy_2d, double max_xy_3d ) {
+    void SetMaxXY( double max_xy_2d, double max_xy_3d, double max_xy_2d_merge ) {
       max_xy_2d_ = max_xy_2d;
       max_xy_3d_ = max_xy_3d;
+      max_xy_2d_merge_ = max_xy_2d_merge;
     }
 
     // check distance between hits
@@ -247,6 +256,8 @@ namespace hcal {
       all_hits.push_back(hit);
     }
 
+    void ReBuild2DCluster(std::vector<Cluster> & clusters);
+
     // get clusters
     std::vector<Cluster> Get2DClusters(){return clusters_2d;}
     std::vector<Cluster> Get3DClusters(){return all_clusters;}
@@ -260,6 +271,13 @@ namespace hcal {
     void Build3DClusters();
   };
 
+  template <typename M, typename V> 
+  void MapToVec( const  M & m, V & v ) {
+    for( typename M::const_iterator it = m.begin(); it != m.end(); ++it ) {
+      v.push_back( it->second );
+    }
+  }
+  
   template<class T>
     void ESort(std::vector<T> &v){
     std::sort( v.begin(),
