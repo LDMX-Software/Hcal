@@ -283,6 +283,10 @@ std::vector<Cluster> ClusterBuilder::Build2DClustersPerLayer(
     while (i_neighbor < num_neighbors_) {
       int num_added = 0;
       for (const auto &hit : c.hits) {
+	// if(debug) {
+	//   cout << "Looking at neigbors of hit, for the " << i_neighbor<< " time " << endl;
+	//   hits_by_id[hit.rawid].Print();
+	// }
 	for (auto n : geom->strip_neighbors[hit.rawid]) {
 	  if (hits_by_id.count(n) &&
 	      !hits_by_id[n].used &&
@@ -292,11 +296,21 @@ std::vector<Cluster> ClusterBuilder::Build2DClustersPerLayer(
 	    // to further prune the neighbors to the seed 2d clusters
 	    if (use_toa_ && !isStripNeighbor(hits_by_id[n], hit, max_xy_2d_)) {
 	      if (debug) {
-		cout << "  The following hit is discarded because the TOA xy distance is less than max_xy_2d_:" << endl;
+		double d = sqrt(pow(hits_by_id[n].x - hit.x, 2) +
+                                pow(hits_by_id[n].y - hit.y, 2));
+		cout << "  The following hit is discarded because the TOA xy distance is larger than max_xy_2d_: " << max_xy_2d_ << " d " << d << endl;
 		hits_by_id[n].Print();
 	      }
 	      continue;
 	    }
+	    // else {
+	    //   if (debug) {
+	    // 	double d = sqrt(pow(hits_by_id[n].x - hit.x, 2) +
+	    // 			pow(hits_by_id[n].y - hit.y, 2));
+	    // 	cout << "  The following hit is considered because the TOA xy distance is " << d << endl;
+	    // 	hits_by_id[n].Print();
+	    //   }
+	    // }
 	    
 	    hits_by_id[n].used = true;
 	    c.hits.push_back(hits_by_id[n]);
@@ -305,6 +319,8 @@ std::vector<Cluster> ClusterBuilder::Build2DClustersPerLayer(
 	    num_added++;
 	  }
 	}
+	// if(debug) 
+	//   cout << "end hit\n " << endl;
       }
       i_neighbor++;
       if(num_added==0) break;
@@ -327,32 +343,39 @@ std::vector<Cluster> ClusterBuilder::Build2DClustersPerLayer(
   if(clusters.size() > 0) {
     // see if its possible to combine clusters
     std::map<int, int> cluster_match;
-    for (size_t i = 0; i < clusters.size()-1; ++i) {
+    for (size_t i = 0; i < clusters.size(); ++i) {
       cluster_match[i] = i;
+    }
+    
+    for (size_t i = 0; i < clusters.size()-1; ++i) {
       for (size_t j = i+1; j < clusters.size(); ++j) {
 	if(i!=j) {
 	  double distance = sqrt(pow(clusters.at(i).y - clusters.at(j).y, 2) + pow(clusters.at(i).y - clusters.at(j).y,2) );
 	  if(distance <= max_xy_2d_merge_) {
+	    cluster_match[j] = cluster_match[i];
 	    if(debug) {
-	      cout << "distance between cluster indices "<< i << " " << j << " is: " << distance << " and below " << max_xy_2d_merge_ << " merging.." << endl;
-	    }
-	    cluster_match[j] = i;
+              cout << "distance between cluster indices "<< i << " " << j << " is: " << distance << " and below " << max_xy_2d_merge_ << " merging.. " << cluster_match[j] << endl;
+            }
 	  }
-	  else 
-	    cluster_match[j] = j;
+	  // else {
+	  //   cout << "unmerged " << i << " " << cluster_match[i] << " and j " << j << " " << cluster_match[j] << " distance " << distance << endl;
+	  // }
 	}
       }
     }
-
+    
     // build a map w cluster index, and hits
+    std::vector<int> to_erase;
     for(auto clus : cluster_match) {
       if(clus.second != clus.first) {
 	auto icluster = clusters.at(clus.first);
 	for(auto hit: icluster.hits) 
 	  clusters.at(clus.second).hits.push_back(hit);
-	clusters.erase(clusters.begin() + clus.first);
+	to_erase.push_back(clus.first);
       }
     }
+    for(auto index: to_erase)
+      clusters.erase(clusters.begin() + index);
     
     // rebuild clusters
     ReBuild2DCluster(clusters);
