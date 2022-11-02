@@ -14,6 +14,8 @@
 #include "DetDescr/HcalGeometry.h"
 #include "DetDescr/HcalID.h"
 #include "Framework/EventProcessor.h"
+#include "Hcal/HcalPhotonGenerator.h"
+#include "Hcal/HcalChargeGenerator.h"
 #include "Recon/Event/EventConstants.h"
 #include "Recon/Event/HgcrocDigiCollection.h"
 #include "SimCore/Event/SimCalorimeterHit.h"
@@ -76,6 +78,29 @@ class HcalDigiProducer : public framework::Producer {
 
   /// Strip attenuation length [m]
   double attlength_;
+
+  // random number generators
+  CLHEP::HepJamesRandom engine_;
+  CLHEP::RandFlat       randFlat_;
+  CLHEP::RandGaussQ     randGaussQ_;
+  CLHEP::RandPoissonQ   randPoissonQ_;
+
+  ///////////////////////////////////////////////////////////////////////////////////////
+  // Variable for photon generator
+
+  double scintillationYield_;
+
+  std::map<ldmx::HcalID::HcalSection, std::shared_ptr<HcalPhotonGenerator> > photonGenerators_;
+
+  ///////////////////////////////////////////////////////////////////////////////////////
+  // Variable for charge generator
+
+  double digitizationStart_;
+  double digitizationEnd_;
+  double singlePixelPeakVoltage_;  // Peak voltage of the single pixel waveform [mV]
+  double deadSiPMProbability_;
+
+  std::shared_ptr<HcalChargeGenerator> chargeGenerator_;
 
   ///////////////////////////////////////////////////////////////////////////////////////
   // Other member variables

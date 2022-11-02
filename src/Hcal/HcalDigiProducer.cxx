@@ -8,13 +8,17 @@
 
 #include "Hcal/HcalDigiProducer.h"
 
+#include "CLHEP/Units/PhysicalConstants.h"
+
 #include "Framework/RandomNumberSeedService.h"
 
 namespace hcal {
 
 HcalDigiProducer::HcalDigiProducer(const std::string& name,
                                    framework::Process& process)
-    : Producer(name, process) {
+    : Producer(name, process),
+      engine_(0),  //FIXME: needs a seed
+      randFlat_(engine_), randGaussQ_(engine_), randPoissonQ_(engine_) {
   /*
    * Noise generator by default uses a Gausian model for noise
    * i.e. It assumes the noise is distributed around a mean (setPedestal)
@@ -48,6 +52,52 @@ void HcalDigiProducer::configure(framework::config::Parameters& ps) {
   // Time -> clock counts conversion
   //  time [ns] * ( 2^10 / max time in ns ) = clock counts
   ns_ = 1024. / clockCycle_;
+
+  // Configure photon generator
+  scintillationYield_= ps.getParameter<double>("scintillationYield");
+  std::map<ldmx::HcalID::HcalSection,std::string> lookupTableNames;
+  lookupTableNames[ldmx::HcalID::HcalSection::BACK]  =ps.getParameter<std::string>("lookupTableBack");
+  lookupTableNames[ldmx::HcalID::HcalSection::TOP]   =ps.getParameter<std::string>("lookupTableTop");
+  lookupTableNames[ldmx::HcalID::HcalSection::BOTTOM]=ps.getParameter<std::string>("lookupTableBottom");
+  lookupTableNames[ldmx::HcalID::HcalSection::LEFT]  =ps.getParameter<std::string>("lookupTableLeft");
+  lookupTableNames[ldmx::HcalID::HcalSection::RIGHT] =ps.getParameter<std::string>("lookupTableRight");
+
+  // load lookup table for each scintillator length
+  // assuming all counters of a section have the same length
+  for(auto lookupTableIter=lookupTableNames.begin(); lookupTableIter!=lookupTableNames.end(); ++lookupTableIter)
+  {
+    std::shared_ptr<HcalPhotonGenerator> photonGenerator = std::shared_ptr<HcalPhotonGenerator>(new HcalPhotonGenerator(randFlat_, randGaussQ_, randPoissonQ_));
+    photonGenerator->LoadLookupTable(lookupTableIter->second,1);
+    photonGenerator->SetScintillationYield(scintillationYield_);
+    photonGenerators_[lookupTableIter->first]=photonGenerator;
+  }
+
+  // Configure charge generator
+  singlePixelPeakVoltage_ = ps.getParameter<double>("singlePixelPeakVoltage");
+  deadSiPMProbability_ = ps.getParameter<double>("deadSiPMProbability");         //0.01 ???
+  int nPixelsX = ps.getParameter<int>("nPixelsX");                               //40
+  int nPixelsY = ps.getParameter<int>("nPixelsY");                               //40
+  double overvoltage = ps.getParameter<double>("overvoltage");                   //3.0V
+  double timeConstant = ps.getParameter<double>("timeConstant");                 //12.0ns
+  double capacitance = ps.getParameter<double>("capacitance");                   //8.84e-14F (per pixel)
+  digitizationStart_ = ps.getParameter<double>("digitizationStart");             //0ns
+  digitizationEnd_ = ps.getParameter<double>("digitizationEnd");                 //100ns  ???
+  //FIXME: How to use vector<pair<int,int>> as parameter?
+  std::vector<std::vector<int>> inactivePixelsTmp = ps.getParameter<std::vector<std::vector<int>>>("inactivePixels");  //{18,18},....,{21,21} 
+  std::vector<std::pair<int,int>> inactivePixels;
+  for(size_t i=0; i<inactivePixelsTmp.size(); ++i) inactivePixels.emplace_back(inactivePixelsTmp[i].at(0),inactivePixelsTmp[i].at(1));
+  HcalChargeGenerator::ProbabilitiesStruct probabilities;
+  probabilities._avalancheProbParam1 = ps.getParameter<double>("AvalancheProbParam1");  //0.65
+  probabilities._avalancheProbParam2 = ps.getParameter<double>("AvalancheProbParam2");  //2.7
+  probabilities._trapType0Prob = ps.getParameter<double>("TrapType0Prob");              //0
+  probabilities._trapType1Prob = ps.getParameter<double>("TrapType1Prob");              //0
+  probabilities._trapType0Lifetime = ps.getParameter<double>("TrapType0Lifetime");      //5.0ns
+  probabilities._trapType1Lifetime = ps.getParameter<double>("TrapType1Lifetime");      //50.0ns
+  probabilities._thermalRate = ps.getParameter<double>("ThermalRate");                  //3.0e-4 ns^-1   300MHz for entire SiPM
+  probabilities._crossTalkProb = ps.getParameter<double>("CrossTalkProb");              //0.05
+  std::string photonMapFileName = ps.getParameter<std::string>("photonMap");
+  chargeGenerator_ = std::shared_ptr<HcalChargeGenerator>(new HcalChargeGenerator(randFlat_, randPoissonQ_, photonMapFileName));
+  chargeGenerator_->SetSiPMConstants(nPixelsX, nPixelsY, overvoltage, timeConstant, capacitance, probabilities, inactivePixels);
 
   // Configure generator that will produce noise hits in empty channels
   double readoutThreshold = ps.getParameter<double>("avgReadoutThreshold");
@@ -95,27 +145,185 @@ void HcalDigiProducer::produce(framework::Event& event) {
   hcalDigis.setNumSamplesPerDigi(nADCs_);
   hcalDigis.setSampleOfInterestIndex(iSOI_);
 
-  std::map<unsigned int, std::vector<const ldmx::SimCalorimeterHit*>> hitsByID;
+  std::map<unsigned int, std::vector<const ldmx::SimCalorimeterHit*>> hitsByID;  //old code
+  std::map<ldmx::HcalDigiID, std::vector<double>> photonTimes;  //new code
 
   // get simulated hcal hits from Geant4 and group them by id
-  auto hcalSimHits{event.getCollection<ldmx::SimCalorimeterHit>(
-      inputCollName_, inputPassName_)};
+  auto hcalSimHits{event.getCollection<ldmx::SimCalorimeterHit>(inputCollName_, inputPassName_)};
+
+  // get map of simulated particles
+  auto particleMap{event.getMap<int, ldmx::SimParticle>("SimParticles")};
 
   for (auto const& simHit : hcalSimHits) {
     // get ID
     unsigned int hitID = simHit.getID();
 
+#define NEWCODE
+#ifdef NEWCODE
+
+    //******************//
+    //***  new code  ***//
+    //******************//
+
+    ldmx::HcalID detID(simHit.getID());
+    int section = detID.section();
+    int layer = detID.layer();
+    int strip = detID.strip();
+    ldmx::HcalDigiID posEndID(section, layer, strip, 0);
+    ldmx::HcalDigiID negEndID(section, layer, strip, 1);
+
+    auto photonGenerator = photonGenerators_.find(static_cast<ldmx::HcalID::HcalSection>(section));
+    if(photonGenerator==photonGenerators_.end()) throw std::runtime_error("HcalDigiProducer::produce: Found an unknown HCal section");
+    //TODO: randomly set a scintillation yield around the mean scintillation yield for each scintillator
+
+    CLHEP::Hep3Vector pos1Local, pos2Local;
+    for(int i=0; i<3; ++i)
+    {
+      pos1Local[i]=simHit.getPreStepPosition().at(i);
+      pos2Local[i]=simHit.getPostStepPosition().at(i);
+    }
+
+    int nContributions = simHit.getNumberOfContribs();
+    if(nContributions==0) continue;
+    int trackID = simHit.getContrib(0).trackID;  //There should only be 1 contributions for Hcal hits
+    double charge = particleMap[trackID].getCharge();
+
+    //TODO: fix the orientations of the counters in SimCore/HcalSD
+    int absorber = 0;  //no absorber at back section
+    switch (section)
+    {
+      case ldmx::HcalID::HcalSection::TOP    : 
+      case ldmx::HcalID::HcalSection::LEFT   : absorber = -2;  //absorber at negative end
+                                               break;
+      case ldmx::HcalID::HcalSection::BOTTOM : 
+      case ldmx::HcalID::HcalSection::RIGHT  : absorber = 2;  //absorber at positive end
+                                               break;
+      
+    }
+
+    photonGenerator->second->MakePhotons(pos1Local, pos2Local, simHit.getPreStepTime(), simHit.getPostStepTime(),
+                                         simHit.getVelocity()/CLHEP::c_light, charge,
+                                         simHit.getEdep(),
+                                         simHit.getPathLength(),
+                                         absorber);
+
+
+    const std::vector<double> &timesPosEnd=photonGenerator->second->GetArrivalTimes(1);  //SiPM1 is at the positive and in the photonGenerator
+    const std::vector<double> &timesNegEnd=photonGenerator->second->GetArrivalTimes(0);  //SiPM0 is at the negative end in the photonGenerator
+    switch (section)
+    {
+      case ldmx::HcalID::HcalSection::BACK   : photonTimes[posEndID].insert(photonTimes[posEndID].end(),timesPosEnd.begin(),timesPosEnd.end());
+                                               photonTimes[negEndID].insert(photonTimes[negEndID].end(),timesNegEnd.begin(),timesNegEnd.end());
+                                               break;
+      case ldmx::HcalID::HcalSection::TOP    : 
+      case ldmx::HcalID::HcalSection::LEFT   : photonTimes[posEndID].insert(photonTimes[posEndID].end(),timesPosEnd.begin(),timesPosEnd.end());
+                                               break;
+      case ldmx::HcalID::HcalSection::BOTTOM : 
+      case ldmx::HcalID::HcalSection::RIGHT  : photonTimes[negEndID].insert(photonTimes[negEndID].end(),timesNegEnd.begin(),timesNegEnd.end());
+                                               break;
+    }
+
+#else
+
+    //******************//
+    //***  old code  ***//
+    //******************//
     auto idh = hitsByID.find(hitID);
     if (idh == hitsByID.end()) {
       hitsByID[hitID] = std::vector<const ldmx::SimCalorimeterHit*>(1, &simHit);
     } else {
       idh->second.push_back(&simHit);
     }
+
+#endif
+
   }
 
   /******************************************************************************************
    * HGCROC Emulation on Simulated Hits (grouped by HcalID)
    ******************************************************************************************/
+
+#ifdef NEWCODE
+  //loop over all SiPMs in order to also catch SiPMs that don't have hits, but may get dark noise
+  for (int section = 0; section < hcalGeometry.getNumSections(); ++section)
+  {
+    for (int layer = 1; layer <= hcalGeometry.getNumLayers(section); ++layer)
+    {
+       for(int strip = 0; strip < hcalGeometry.getNumStrips(section, layer); ++strip)
+       {
+         typedef std::vector<ldmx::HgcrocDigiCollection::Sample> digisType;
+         std::vector<std::pair<ldmx::HcalDigiID,digisType> > digisToAdd;   //can hold digis from both ends
+         for(int end = 0; end <2; ++end)
+         {
+           ldmx::HcalDigiID channelID(section, layer, strip, end);
+
+           if(end==0 && section==ldmx::HcalID::HcalSection::BOTTOM) continue; //pos end
+           if(end==0 && section==ldmx::HcalID::HcalSection::RIGHT) continue;  //pos end
+           if(end==1 && section==ldmx::HcalID::HcalSection::TOP) continue;    //neg end
+           if(end==1 && section==ldmx::HcalID::HcalSection::LEFT) continue;   //neg end
+
+           if(randFlat_.fire() < deadSiPMProbability_) continue;  //assume that this random SiPM is dead
+                                                                  //TODO: it may be better to select dead SiPMs at the beginning ot the run,
+                                                                  //and keep these dead SiPMs for the entire run
+
+           std::vector<std::pair<double,size_t> > photonTimesWithIndex;  //pair of photon time and index in the original photon vector
+                                                                         //this is needed by the charge generator as used in the Mu2e CRV
+
+           //find this HcalDigiID of this SiPM in the photonTimes map
+           //and fill the new photon times/index vector
+           auto times = photonTimes.find(channelID);
+           if(times!=photonTimes.end())
+           {
+             for(size_t index=0; index<times->second.size(); ++index)
+             {
+               double time = times->second.at(index);
+               photonTimesWithIndex.emplace_back(time,index);
+             }
+           }
+
+           //generate individual pixes chargess based on arriving photons and add noise
+           //return a charge vector of a type used by Mu2e
+           std::vector<SiPMresponse> charges;
+           chargeGenerator_->Simulate(photonTimesWithIndex, charges, digitizationStart_, digitizationEnd_);
+
+           //convert vector of charges to vector of voltages
+           std::vector<std::pair<double,double>> voltages;
+           for(size_t index=0; index<charges.size(); ++index)
+           {
+             double voltage = charges.at(index)._chargeInPEs * singlePixelPeakVoltage_;
+             double time = charges.at(index)._time;
+             voltages.emplace_back(voltage,time);
+           }
+
+           //create digis //TODO: try to reduce having these digis copied twice
+           digisType digis; 
+           if(hgcroc_->digitize(channelID.raw(), voltages, digis)) digisToAdd.emplace_back(channelID,digis);  //can hold digis from both ends
+        } //ends
+
+       if(section == ldmx::HcalID::HcalSection::BACK)
+       {
+         if(digisToAdd.size()!=2) continue;  //need digis on both ends for back section
+         hcalDigis.addDigi(digisToAdd[0].first.raw(),digisToAdd[0].second);
+         hcalDigis.addDigi(digisToAdd[1].first.raw(),digisToAdd[1].second);
+for(size_t i=0; i<digisToAdd[0].second.size(); ++i) std::cout<<"BACK 0 "<<i<<" "<<digisToAdd[0].second.at(i).adc_t()<<std::endl;
+std::cout<<std::endl;
+for(size_t i=0; i<digisToAdd[1].second.size(); ++i) std::cout<<"BACK 1 "<<i<<" "<<digisToAdd[1].second.at(i).adc_t()<<std::endl;
+std::cout<<std::endl;
+       }
+       else
+       {
+         if(digisToAdd.size()!=1) continue;  //need digis on only one end for all other sections
+         hcalDigis.addDigi(digisToAdd[0].first.raw(),digisToAdd[0].second);
+for(size_t i=0; i<digisToAdd[0].second.size(); ++i) std::cout<<section<<"  "<<i<<" "<<digisToAdd[0].second.at(i).adc_t()<<std::endl;
+std::cout<<std::endl;
+       }
+
+      } //strips
+    } //layers
+  } //sections
+std::cout<<"--------------------------------------------------------"<<std::endl;
+
+#else
   for (auto const& simBar : hitsByID) {
     ldmx::HcalID detID(simBar.first);
     int section = detID.section();
@@ -243,6 +451,10 @@ void HcalDigiProducer::produce(framework::Event& event) {
           hgcroc_->digitize(negendID.raw(), pulses_negend, digiToAddNegend)) {
         hcalDigis.addDigi(posendID.raw(), digiToAddPosend);
         hcalDigis.addDigi(negendID.raw(), digiToAddNegend);
+for(size_t i=0; i<digiToAddPosend.size(); ++i) std::cout<<"BACK 0"<<i<<" "<<digiToAddPosend.at(i).adc_t()<<std::endl;
+std::cout<<std::endl;
+for(size_t i=0; i<digiToAddNegend.size(); ++i) std::cout<<"BACK 1"<<i<<" "<<digiToAddNegend.at(i).adc_t()<<std::endl;
+std::cout<<std::endl;
       }  // Back Hcal needs to digitize both pulses or none
     } else {
       bool is_posend = false;
@@ -258,15 +470,20 @@ void HcalDigiProducer::produce(framework::Event& event) {
         ldmx::HcalDigiID digiID(section, layer, strip, 0);
         if (hgcroc_->digitize(digiID.raw(), pulses_posend, digiToAdd)) {
           hcalDigis.addDigi(digiID.raw(), digiToAdd);
+for(size_t i=0; i<digiToAdd.size(); ++i) std::cout<<section<<"  "<<i<<" "<<digiToAdd.at(i).adc_t()<<std::endl;
+std::cout<<std::endl;
         }
       } else {
         ldmx::HcalDigiID digiID(section, layer, strip, 1);
         if (hgcroc_->digitize(digiID.raw(), pulses_negend, digiToAdd)) {
           hcalDigis.addDigi(digiID.raw(), digiToAdd);
+for(size_t i=0; i<digiToAdd.size(); ++i) std::cout<<section<<"  "<<i<<" "<<digiToAdd.at(i).adc_t()<<std::endl;
+std::cout<<std::endl;
         }
       }
     }
   }
+std::cout<<"--------------------------------------------------------"<<std::endl;
 
   /******************************************************************************************
    * Noise Simulation on Empty Channels
@@ -347,6 +564,8 @@ void HcalDigiProducer::produce(framework::Event& event) {
       }
     }  // loop over noise amplitudes
   }    // if we should add noise
+
+#endif
 
   event.add(digiCollName_, hcalDigis);
 
