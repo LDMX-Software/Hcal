@@ -89,6 +89,10 @@ class HcalDigiProducer : public framework::Producer {
   // Variable for photon generator
 
   double scintillationYield_;
+  double scintillationYieldSigma_;
+  double scintillationYieldCutoffLow_;
+  double scintillationYieldCutoffHigh_;
+  std::map<ldmx::HcalID,double> scintillationYieldsAdjusted_;
 
   std::map<std::pair<int,int>, std::shared_ptr<HcalPhotonGenerator> > photonGenerators_;
 

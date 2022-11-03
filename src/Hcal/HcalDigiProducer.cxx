@@ -55,6 +55,9 @@ void HcalDigiProducer::configure(framework::config::Parameters& ps) {
 
   // Configure photon generator
   scintillationYield_= ps.getParameter<double>("scintillationYield");
+  scintillationYieldSigma_= ps.getParameter<double>("scintillationYieldSigma");
+  scintillationYieldCutoffLow_= ps.getParameter<double>("scintillationYieldCutoffLow");
+  scintillationYieldCutoffHigh_= ps.getParameter<double>("scintillationYieldCutoffHigh");
   std::vector<std::string> lookupTableNames  = ps.getParameter<std::vector<std::string>>("lookupTables");
 
   // load lookup table for each scintillator length
@@ -67,6 +70,7 @@ void HcalDigiProducer::configure(framework::config::Parameters& ps) {
     int reflectorType=photonGenerator->GetReflectorType();
     photonGenerators_[std::pair<int,int>(length,reflectorType)]=photonGenerator;
   }
+  scintillationYieldsAdjusted_.clear();
 
   // Configure charge generator
   singlePixelPeakVoltage_ = ps.getParameter<double>("singlePixelPeakVoltage");
@@ -173,7 +177,22 @@ void HcalDigiProducer::produce(framework::Event& event) {
     int reflectorType=(section==ldmx::HcalID::HcalSection::BACK?0:2);
     auto photonGenerator = photonGenerators_.find(std::pair<int,int>(length, reflectorType));
     if(photonGenerator==photonGenerators_.end()) throw std::runtime_error("HcalDigiProducer::produce: Found an a scintillator for which we don't have a lookup table");
-    //TODO: randomly set a scintillation yield around the mean scintillation yield for each scintillator
+
+    //randomly set a scintillation yield around the mean scintillation yield for each scintillator
+    //needs to be done here, because the geometry is not available in configure()
+    auto currentScintillationYield = scintillationYieldsAdjusted_.find(detID);
+    if(currentScintillationYield==scintillationYieldsAdjusted_.end())
+    {
+      double adjustedYield=0;
+      do
+      {
+        adjustedYield=randGaussQ_.fire(scintillationYield_, scintillationYield_*scintillationYieldSigma_);
+      } while(adjustedYield<scintillationYield_*scintillationYieldCutoffLow_ ||
+              adjustedYield>scintillationYield_*scintillationYieldCutoffHigh_);
+
+      currentScintillationYield = scintillationYieldsAdjusted_.emplace(detID,adjustedYield).first;
+    }
+    photonGenerator->second->SetScintillationYield(currentScintillationYield->second);
 
     CLHEP::Hep3Vector pos1Local, pos2Local;
     for(int i=0; i<3; ++i)

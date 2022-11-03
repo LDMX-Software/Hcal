@@ -92,6 +92,9 @@ class HcalDigiProducer(Producer) :
 
         # scintillation yield
         self.scintillationYield = 30000.; # in photons/MeV
+        self.scintillationYieldSigma = .1; # gaussian distribution with sigma equal to 10% of the mean
+        self.scintillationYieldCutoffLow = .7; # the scintillation yield distribution is cut off at 70% of the mean
+        self.scintillationYieldCutoffHigh = 1.2; # the scintillation yield distribution is cut off at 120% of the mean
 
         # lookup tables
         self.lookupTables = [ "@CMAKE_INSTALL_PREFIX@/data/Hcal/LookupTable_2000_0",
