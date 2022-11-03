@@ -112,6 +112,10 @@ class HcalPhotonGenerator
     const std::vector<double> &GetArrivalTimes(int SiPM);
     void                      SetScintillationYield(double yield) {_scintillationYield=yield;}
 
+    //lookup table constants
+    double                    GetScintillatorLength() {return _LC.halfLength*2.0;}
+    int                       GetReflectorType() {return _LC.reflector;}
+
   private:
 
     std::string               _fileName;

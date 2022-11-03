@@ -94,11 +94,12 @@ class HcalDigiProducer(Producer) :
         self.scintillationYield = 30000.; # in photons/MeV
 
         # lookup tables
-        self.lookupTableBack   = "@CMAKE_INSTALL_PREFIX@/data/Hcal/LookupTable_2000_0";
-        self.lookupTableTop    = "@CMAKE_INSTALL_PREFIX@/data/Hcal/LookupTable_1800_2";
-        self.lookupTableBottom = "@CMAKE_INSTALL_PREFIX@/data/Hcal/LookupTable_1600_2";
-        self.lookupTableRight  = "@CMAKE_INSTALL_PREFIX@/data/Hcal/LookupTable_1200_2";
-        self.lookupTableLeft   = "@CMAKE_INSTALL_PREFIX@/data/Hcal/LookupTable_1400_2";
+        self.lookupTables = [ "@CMAKE_INSTALL_PREFIX@/data/Hcal/LookupTable_2000_0",
+                              "@CMAKE_INSTALL_PREFIX@/data/Hcal/LookupTable_1800_2",
+                              "@CMAKE_INSTALL_PREFIX@/data/Hcal/LookupTable_1600_2",
+                              "@CMAKE_INSTALL_PREFIX@/data/Hcal/LookupTable_1200_2",
+                              "@CMAKE_INSTALL_PREFIX@/data/Hcal/LookupTable_1400_2", 
+                              "@CMAKE_INSTALL_PREFIX@/data/Hcal/LookupTable_600_2" ];
 
         # SiPM single-pixel response
         self.singlePixelPeakVoltage = 5.0; # 5 mV

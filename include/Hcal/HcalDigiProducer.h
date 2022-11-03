@@ -90,7 +90,7 @@ class HcalDigiProducer : public framework::Producer {
 
   double scintillationYield_;
 
-  std::map<ldmx::HcalID::HcalSection, std::shared_ptr<HcalPhotonGenerator> > photonGenerators_;
+  std::map<std::pair<int,int>, std::shared_ptr<HcalPhotonGenerator> > photonGenerators_;
 
   ///////////////////////////////////////////////////////////////////////////////////////
   // Variable for charge generator
