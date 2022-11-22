@@ -736,6 +736,7 @@ void ClusterBuilder::Build3DClusters() {
 }
 
 void ClusterBuilder::Merge3DClusters() {
+  cout << "size " <<  all_clusters.size() << endl;
   std::map<int, int> cluster_match;
   for (size_t i = 0; i < all_clusters.size(); ++i) {
      cluster_match[i] = i;
@@ -746,30 +747,27 @@ void ClusterBuilder::Merge3DClusters() {
       if(i!=j) {
 	// x and y distance
 	double distance_xy = sqrt(pow(all_clusters.at(i).y - all_clusters.at(j).y, 2) + pow(all_clusters.at(i).y - all_clusters.at(j).y,2) );
+	//cout << "d " << distance_xy << endl;
 	// z distance
 	if(distance_xy <= max_xy_2d_merge_) {
 	  cluster_match[j] = cluster_match[i];
-	  if(debug) {
-	    cout << "distance between cluster indices "<< i << " " << j << " is: " << distance_xy << " and below " << max_xy_2d_merge_ << " merging.. " << cluster_match[j] << endl;
-	  }
+	  cout << "distance between cluster indices "<< i << " " << j << " is: " << distance_xy << " and below " << max_xy_2d_merge_ << " merging.. " << cluster_match[j] << endl;
 	}
 	else{
-	  if(debug) {
-	    cout << "unmerged " << i << " " << cluster_match[i] << " and j " << j << " " << cluster_match[j] << " distance " << distance_xy << endl;
-	  }
+	  cout << "unmerged " << i << " " << cluster_match[i] << " and j " << j << " " << cluster_match[j] << " distance " << distance_xy << endl;
 	}
       }
     }
   }
 
-  std::vector<int> to_erase;                                                                                                                                                                                                                                                  
+  std::vector<int> to_erase;
   for(auto clus : cluster_match) {
     if(clus.second != clus.first) {
       auto icluster = all_clusters.at(clus.first);
       for(auto hit: icluster.hits)
 	all_clusters.at(clus.second).hits.push_back(hit);
-      to_erase.push_back(clus.first);                                                                                                                                                                                                                                         
-    }                                                                                                                                                                                                                                                                         
+      to_erase.push_back(clus.first);
+    }
   }                                                                                                                                                                                                                                                                           
   for(auto index: to_erase)
     all_clusters.erase(all_clusters.begin() + index);
