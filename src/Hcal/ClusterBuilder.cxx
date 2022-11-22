@@ -748,7 +748,7 @@ void ClusterBuilder::Merge3DClusters(std::vector<Cluster> & clusters3d) {
     for (size_t j = i+1; j < clusters3d.size(); ++j) {
       if(i!=j) {
 	// x and y distance
-	double distance_xy = sqrt(pow(clusters3d.at(i).y - clusters3d.at(j).y, 2) + pow(clusters3d.at(i).y - clusters3d.at(j).y,2) );
+	double distance_xy = sqrt(pow(clusters3d.at(i).x - clusters3d.at(j).x, 2) + pow(clusters3d.at(i).y - clusters3d.at(j).y,2) );
 	//cout << "d " << distance_xy << endl;
 	// z distance
 	if(distance_xy <= max_xy_2d_merge_) {
