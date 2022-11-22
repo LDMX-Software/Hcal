@@ -270,7 +270,7 @@ namespace hcal {
     std::vector<Cluster> Build2DClustersPerLayer( std::vector<Hit> hits);
     void Build2DClusters();
     void Build3DClusters();
-    void Merge3DClusters();
+    void Merge3DClusters(std::vector<Cluster> & clusters3d);
   };
 
   template <typename M, typename V> 

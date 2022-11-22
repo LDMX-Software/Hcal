@@ -102,9 +102,9 @@ void ClusterBuilder::ReBuild3DCluster(std::vector<Cluster> & clusters3d) {
 
     for (auto c2 : c.clusters2d) {
       c.e += c2.e;
-      if (debug) {
-        c2.Print();
-      }
+      //if (debug) {
+      //  c2.Print();
+      //}
       double energy = c2.e;
       // double w = 1;                                                                                                                                                                                                                                                                                                                                               
       double w = std::max(0., energy);
@@ -730,23 +730,25 @@ void ClusterBuilder::Build3DClusters() {
     for (auto &c : clusters3d) c.Print3d();
   }
 
+  Merge3DClusters(clusters3d);
+  
   all_clusters.clear();
   all_clusters.insert(all_clusters.begin(), clusters3d.begin(),
                       clusters3d.end());
 }
 
-void ClusterBuilder::Merge3DClusters() {
-  cout << "size " <<  all_clusters.size() << endl;
+void ClusterBuilder::Merge3DClusters(std::vector<Cluster> & clusters3d) {
+  cout << "size " <<  clusters3d.size() << endl;
   std::map<int, int> cluster_match;
-  for (size_t i = 0; i < all_clusters.size(); ++i) {
+  for (size_t i = 0; i < clusters3d.size(); ++i) {
      cluster_match[i] = i;
   }
 
-  for (size_t i = 0; i < all_clusters.size()-1; ++i) {
-    for (size_t j = i+1; j < all_clusters.size(); ++j) {
+  for (size_t i = 0; i < clusters3d.size()-1; ++i) {
+    for (size_t j = i+1; j < clusters3d.size(); ++j) {
       if(i!=j) {
 	// x and y distance
-	double distance_xy = sqrt(pow(all_clusters.at(i).y - all_clusters.at(j).y, 2) + pow(all_clusters.at(i).y - all_clusters.at(j).y,2) );
+	double distance_xy = sqrt(pow(clusters3d.at(i).y - clusters3d.at(j).y, 2) + pow(clusters3d.at(i).y - clusters3d.at(j).y,2) );
 	//cout << "d " << distance_xy << endl;
 	// z distance
 	if(distance_xy <= max_xy_2d_merge_) {
@@ -762,21 +764,23 @@ void ClusterBuilder::Merge3DClusters() {
 
   std::vector<int> to_erase;
   for(auto clus : cluster_match) {
+    cout << "cluster match " << clus.first << " " << clus.second << endl;
     if(clus.second != clus.first) {
-      auto icluster = all_clusters.at(clus.first);
+      auto icluster = clusters3d.at(clus.first);
       for(auto hit: icluster.hits)
-	all_clusters.at(clus.second).hits.push_back(hit);
+	clusters3d.at(clus.second).hits.push_back(hit);
+      cout << "erasing index " << clus.first << endl;
       to_erase.push_back(clus.first);
     }
   }                                                                                                                                                                                                                                                                           
   for(auto index: to_erase)
-    all_clusters.erase(all_clusters.begin() + index);
+    clusters3d.erase(clusters3d.begin() + index);
 
-  ReBuild3DCluster(all_clusters);
+  ReBuild3DCluster(clusters3d);
 
   if (debug) {
     cout << "\nRe-defined hits and clusters " << endl;
-    for (auto &c : all_clusters) c.Print();
+    for (auto &c : clusters3d) c.Print();
   }                                    
   
 }
@@ -793,8 +797,6 @@ void ClusterBuilder::BuildClusters() {
   // cluster the hits across layers
   Build3DClusters();
 
-  Merge3DClusters();
-  
   // sort by energy
   ESort(all_clusters);
 }
