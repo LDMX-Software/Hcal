@@ -79,6 +79,107 @@ void ClusterBuilder::ReBuild2DCluster(std::vector<Cluster> & clusters) {
   }
 }
 
+void ClusterBuilder::ReBuild3DCluster(std::vector<Cluster> & clusters3d) {
+  for (auto &c : clusters3d) {
+    if(debug) {
+      c.Print3d();
+    }
+    c.e = 0;
+    c.x = 0;
+    c.y = 0;
+    c.z = 0;
+    c.xx = 0;
+    c.yy = 0;
+    c.zz = 0;
+    double sumw = 0;
+    double sumw_x = 0;
+    double sumw_y = 0;
+    c.hits.clear();
+    c.strips_oddlayer.clear();
+    c.strips_evenlayer.clear();
+
+    std::vector<std::vector<int>> s_perlayer(100);
+
+    for (auto c2 : c.clusters2d) {
+      c.e += c2.e;
+      if (debug) {
+        c2.Print();
+      }
+      double energy = c2.e;
+      // double w = 1;                                                                                                                                                                                                                                                                                                                                               
+      double w = std::max(0., energy);
+      if (energy_weight_ == 1) {
+        double w = std::max(0., log(c2.e / MIN_ENERGY_));
+      }
+      if (use_toa_) {
+        // if using TOA information
+        // only estimate the x position from vertical layers (even for v13!)
+        // and only estimate the y position from horizontal layers (odd for v13!)
+        // NOTE: Change to depend on geometry parity..
+        //if(c2.layer % 2 == 0) {                                                                                                                                                                                                                                                                                                                                    
+        c.x += c2.x * w;
+        c.xx += c2.x * c2.x * w;
+        sumw_x+=w;
+        //}                                                                                                                                                                                                                                                                                                                                                          
+        //else {                                                                                                                                                                                                                                                                                                                                                     
+        c.y += c2.y * w;
+        c.yy += c2.y * c2.y * w;
+        sumw_y+=w;
+        //}                                                                                                                                                                                                                                                                                                                                                          
+      }
+      else {
+        c.x += c2.x * w;
+        c.y += c2.y * w;
+        c.xx += c2.x * c2.x * w;
+        c.yy += c2.y * c2.y * w;
+        sumw_x+=w;
+        sumw_y+=w;
+      }
+      c.z += c2.z * w;
+      c.zz += c2.z * c2.z * w;
+      sumw += w;
+      for (const auto &hit : c2.hits) {
+        c.hits.push_back(hit);
+        if (hit.layer % 2 == 0) {
+          c.strips_evenlayer.push_back(hit.strip);
+        } else {
+          c.strips_oddlayer.push_back(hit.strip);
+        }
+        c.strips.push_back(hit.strip);
+        s_perlayer.at(hit.layer).push_back(hit.strip);
+      }
+      c.strips_per_layer = s_perlayer;
+    }
+
+    // sort cluster strips                                                                                                                                                                                                                                                                                                                                           
+    sort(c.strips_evenlayer.begin(), c.strips_evenlayer.end());
+    c.strips_evenlayer.erase(
+        unique(c.strips_evenlayer.begin(), c.strips_evenlayer.end()),
+        c.strips_evenlayer.end());
+    sort(c.strips_oddlayer.begin(), c.strips_oddlayer.end());
+    c.strips_oddlayer.erase(
+        unique(c.strips_oddlayer.begin(), c.strips_oddlayer.end()),
+        c.strips_oddlayer.end());
+
+    // position                                                                                                                                                                                                                                                                                                                                                      
+    if(use_toa_){
+      c.x /= sumw_x;
+      c.y /= sumw_y;
+    }
+    else{
+      c.x /= sumw;
+      c.y /= sumw;
+    }
+    c.z /= sumw;
+    c.xx /= sumw;  // now is <x^2>                                                                                                                                                                                                                                                                                                                                   
+    c.yy /= sumw;
+    c.zz /= sumw;
+    c.xx = sqrt(c.xx - c.x * c.x);  // now is sqrt(<x^2>-<x>^2)                                                                                                                                                                                                                                                                                                      
+    c.yy = sqrt(c.yy - c.y * c.y);
+    c.zz = sqrt(c.zz - c.z * c.z);
+  }
+
+}
   
 std::vector<Cluster> ClusterBuilder::Build2DClustersPerLayer(
     std::vector<Hit> hits) {
@@ -333,13 +434,13 @@ std::vector<Cluster> ClusterBuilder::Build2DClustersPerLayer(
   // rebuild cluster properties based on the new hits
   // do energy weighting here
   ReBuild2DCluster(clusters);
-
   if (debug) {
     cout << "\n Preliminary hits and clusters " << endl;
     for (auto &hitpair : hits_by_id) hitpair.second.Print();
     for (auto &c : clusters) c.Print();
   }
 
+  /*
   if(clusters.size() > 0) {
     // see if its possible to combine clusters
     std::map<int, int> cluster_match;
@@ -385,6 +486,7 @@ std::vector<Cluster> ClusterBuilder::Build2DClustersPerLayer(
       for (auto &c : clusters) c.Print();
     }
   }
+  */
 
   return clusters;
 }
@@ -621,104 +723,7 @@ void ClusterBuilder::Build3DClusters() {
     cout << " done with building " << endl;
   
   // post-process
-  for (auto &c : clusters3d) {
-    if(debug) {
-      c.Print3d();
-    }
-    c.e = 0;
-    c.x = 0;
-    c.y = 0;
-    c.z = 0;
-    c.xx = 0;
-    c.yy = 0;
-    c.zz = 0;
-    double sumw = 0;
-    double sumw_x = 0;
-    double sumw_y = 0;
-    c.hits.clear();
-    c.strips_oddlayer.clear();
-    c.strips_evenlayer.clear();
-
-    std::vector<std::vector<int>> s_perlayer(100);
-    
-    for (auto c2 : c.clusters2d) {
-      c.e += c2.e;
-      if (debug) {
-	c2.Print();
-      }
-      double energy = c2.e;
-      // double w = 1;
-      double w = std::max(0., energy);
-      if (energy_weight_ == 1) {
-        double w = std::max(0., log(c2.e / MIN_ENERGY_));
-      }
-      if (use_toa_) {
-	// if using TOA information
-	// only estimate the x position from vertical layers (even for v13!)
-	// and only estimate the y position from horizontal layers (odd for v13!)
-	// NOTE: Change to depend on geometry parity..
-	//if(c2.layer % 2 == 0) {
-	c.x += c2.x * w;
-	c.xx += c2.x * c2.x * w;
-	sumw_x+=w;
-	//}
-	//else {
-	c.y += c2.y * w;
-	c.yy += c2.y * c2.y * w;
-	sumw_y+=w;
-	//}
-      }
-      else {
-	c.x += c2.x * w;
-	c.y += c2.y * w;
-	c.xx += c2.x * c2.x * w;
-	c.yy += c2.y * c2.y * w;
-	sumw_x+=w;
-	sumw_y+=w;
-      }
-      c.z += c2.z * w;
-      c.zz += c2.z * c2.z * w;
-      sumw += w;
-      for (const auto &hit : c2.hits) {
-        c.hits.push_back(hit);
-        if (hit.layer % 2 == 0) {
-          c.strips_evenlayer.push_back(hit.strip);
-        } else {
-          c.strips_oddlayer.push_back(hit.strip);
-        }
-        c.strips.push_back(hit.strip);
-	s_perlayer.at(hit.layer).push_back(hit.strip);
-      }
-      c.strips_per_layer = s_perlayer;
-    }
-    
-    // sort cluster strips
-    sort(c.strips_evenlayer.begin(), c.strips_evenlayer.end());
-    c.strips_evenlayer.erase(
-        unique(c.strips_evenlayer.begin(), c.strips_evenlayer.end()),
-        c.strips_evenlayer.end());
-    sort(c.strips_oddlayer.begin(), c.strips_oddlayer.end());
-    c.strips_oddlayer.erase(
-        unique(c.strips_oddlayer.begin(), c.strips_oddlayer.end()),
-        c.strips_oddlayer.end());
-
-    // position
-    if(use_toa_){
-      c.x /= sumw_x;
-      c.y /= sumw_y;
-    }
-    else{
-      c.x /= sumw;
-      c.y /= sumw;
-    }
-    c.z /= sumw;
-    c.xx /= sumw;  // now is <x^2>
-    c.yy /= sumw;
-    c.zz /= sumw;
-    c.xx = sqrt(c.xx - c.x * c.x);  // now is sqrt(<x^2>-<x>^2)
-    c.yy = sqrt(c.yy - c.y * c.y);
-    c.zz = sqrt(c.zz - c.z * c.z);
-  }
+  ReBuild3DCluster(clusters3d);
 
   if (debug) {
     cout << "\nAfter postprocess, found 3d clusters" << endl;
@@ -728,6 +733,54 @@ void ClusterBuilder::Build3DClusters() {
   all_clusters.clear();
   all_clusters.insert(all_clusters.begin(), clusters3d.begin(),
                       clusters3d.end());
+}
+
+void ClusterBuilder::Merge3DClusters() {
+  std::map<int, int> cluster_match;
+  for (size_t i = 0; i < all_clusters.size(); ++i) {
+     cluster_match[i] = i;
+  }
+
+  for (size_t i = 0; i < all_clusters.size()-1; ++i) {
+    for (size_t j = i+1; j < all_clusters.size(); ++j) {
+      if(i!=j) {
+	// x and y distance
+	double distance_xy = sqrt(pow(all_clusters.at(i).y - all_clusters.at(j).y, 2) + pow(all_clusters.at(i).y - all_clusters.at(j).y,2) );
+	// z distance
+	if(distance_xy <= max_xy_2d_merge_) {
+	  cluster_match[j] = cluster_match[i];
+	  if(debug) {
+	    cout << "distance between cluster indices "<< i << " " << j << " is: " << distance_xy << " and below " << max_xy_2d_merge_ << " merging.. " << cluster_match[j] << endl;
+	  }
+	}
+	else{
+	  if(debug) {
+	    cout << "unmerged " << i << " " << cluster_match[i] << " and j " << j << " " << cluster_match[j] << " distance " << distance_xy << endl;
+	  }
+	}
+      }
+    }
+  }
+
+  std::vector<int> to_erase;                                                                                                                                                                                                                                                  
+  for(auto clus : cluster_match) {
+    if(clus.second != clus.first) {
+      auto icluster = all_clusters.at(clus.first);
+      for(auto hit: icluster.hits)
+	all_clusters.at(clus.second).hits.push_back(hit);
+      to_erase.push_back(clus.first);                                                                                                                                                                                                                                         
+    }                                                                                                                                                                                                                                                                         
+  }                                                                                                                                                                                                                                                                           
+  for(auto index: to_erase)
+    all_clusters.erase(all_clusters.begin() + index);
+
+  ReBuild3DCluster(all_clusters);
+
+  if (debug) {
+    cout << "\nRe-defined hits and clusters " << endl;
+    for (auto &c : all_clusters) c.Print();
+  }                                    
+  
 }
 
 void ClusterBuilder::BuildClusters() {
@@ -742,6 +795,8 @@ void ClusterBuilder::BuildClusters() {
   // cluster the hits across layers
   Build3DClusters();
 
+  Merge3DClusters();
+  
   // sort by energy
   ESort(all_clusters);
 }

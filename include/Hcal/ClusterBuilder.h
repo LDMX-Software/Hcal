@@ -158,7 +158,7 @@ namespace hcal {
     ClusterGeometry* geom;
 
     // debug
-    bool debug = false;
+    bool debug = true;
 
     // use TOA hit information or not
     bool use_toa_ = true;
@@ -257,6 +257,7 @@ namespace hcal {
     }
 
     void ReBuild2DCluster(std::vector<Cluster> & clusters);
+    void ReBuild3DCluster(std::vector<Cluster> & clusters3d);
 
     // get clusters
     std::vector<Cluster> Get2DClusters(){return clusters_2d;}
@@ -269,6 +270,7 @@ namespace hcal {
     std::vector<Cluster> Build2DClustersPerLayer( std::vector<Hit> hits);
     void Build2DClusters();
     void Build3DClusters();
+    void Merge3DClusters();
   };
 
   template <typename M, typename V> 
