@@ -767,8 +767,10 @@ void ClusterBuilder::Merge3DClusters(std::vector<Cluster> & clusters3d) {
     cout << "cluster match " << clus.first << " " << clus.second << endl;
     if(clus.second != clus.first) {
       auto icluster = clusters3d.at(clus.first);
-      for(auto hit: icluster.hits)
-	clusters3d.at(clus.second).hits.push_back(hit);
+      for(auto cluster2d: icluster.clusters2d)
+	clusters3d.at(clus.second).clusters2d.push_back(cluster2d);
+      //for(auto hit: icluster.hits)
+      //	clusters3d.at(clus.second).hits.push_back(hit);
       cout << "erasing index " << clus.first << endl;
       to_erase.push_back(clus.first);
     }
