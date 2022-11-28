@@ -730,7 +730,9 @@ void ClusterBuilder::Build3DClusters() {
     for (auto &c : clusters3d) c.Print3d();
   }
 
-  Merge3DClusters(clusters3d);
+  if(clusters3d.size() > 0) {
+    Merge3DClusters(clusters3d);
+  }
   
   all_clusters.clear();
   all_clusters.insert(all_clusters.begin(), clusters3d.begin(),
