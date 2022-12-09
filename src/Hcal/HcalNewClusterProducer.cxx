@@ -23,8 +23,8 @@ void HcalNewClusterProducer::configure(framework::config::Parameters& p) {
   max_xy_2d_ = p.getParameter<double>("max_xy_2d");
   max_xy_merge_ = p.getParameter<double>("max_xy_merge");
   max_xy_3d_ = p.getParameter<double>("max_xy_3d");
-  close_layer_ = p.getParameter<double>("close_layer"); // number of layers to be close by when building 3d clusters
-  is_merge_2d_ = p.getParameter<double>("is_merge_2d"); // merge 2d clusters or not
+  close_layer_ = p.getParameter<int>("close_layer"); // number of layers to be close by when building 3d clusters
+  is_merge_2d_ = p.getParameter<bool>("is_merge_2d"); // merge 2d clusters or not
   use_toa_ = p.getParameter<bool>("use_toa");
   layer_parity_ = p.getParameter<int>("layer_parity");
 }
