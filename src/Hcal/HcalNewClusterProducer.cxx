@@ -21,8 +21,10 @@ void HcalNewClusterProducer::configure(framework::config::Parameters& p) {
   seed_threshold_3d_ = p.getParameter<double>("seed_threshold_3d");
   neighbor_threshold_3d_ = p.getParameter<double>("neighbor_threshold_3d");
   max_xy_2d_ = p.getParameter<double>("max_xy_2d");
-  max_xy_2d_merge_ = p.getParameter<double>("max_xy_2d_merge");
+  max_xy_merge_ = p.getParameter<double>("max_xy_merge");
   max_xy_3d_ = p.getParameter<double>("max_xy_3d");
+  close_layer_ = p.getParameter<double>("close_layer"); // number of layers to be close by when building 3d clusters
+  is_merge_2d_ = p.getParameter<double>("is_merge_2d"); // merge 2d clusters or not
   use_toa_ = p.getParameter<bool>("use_toa");
   layer_parity_ = p.getParameter<int>("layer_parity");
 }
@@ -39,7 +41,7 @@ void HcalNewClusterProducer::produce(framework::Event& event) {
   builder.SetThresholds2D(seed_threshold_2d_, neighbor_threshold_2d_);
   builder.SetThresholds3D(seed_threshold_3d_, neighbor_threshold_3d_);
   builder.SetNeighbors(num_neighbors_);
-  builder.SetMaxXY(max_xy_2d_, max_xy_3d_, max_xy_2d_merge_);
+  builder.SetMaxXY(max_xy_2d_, max_xy_3d_, max_xy_merge_, close_layer_, is_merge_2d_ );
   builder.SetTOA(use_toa_, layer_parity_);
   builder.SetClusterGeo(&clusterGeometry);
   for (auto const& h : hcalRecHits) {

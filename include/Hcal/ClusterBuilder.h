@@ -108,6 +108,7 @@ namespace hcal {
     int depth=0;
     int first_layer=-1;
     int last_layer=-1;
+    int avg_layer=-1;
     
     void Print() {
       cout << "Cluster ("
@@ -133,6 +134,8 @@ namespace hcal {
 	   << ", z= " << z
 	   << ", n2dClus= " << clusters2d.size()
 	   << ", first_layer=" << first_layer
+	   << ", last_layer=" << last_layer
+	   << ", avg_layer=" << avg_layer
 	   << ", depth=" << depth
 	   << ")" 
 	   << endl;
@@ -162,11 +165,17 @@ namespace hcal {
 
     // use TOA hit information or not
     bool use_toa_ = true;
-
+    
+    // merge 2d
+    bool is_merge_2d_ = true;
+    
     // if not using TOA, consider only hits of a given parity
     // i.e. if layer_parity_ ==1, we only consider hits in odd layers
     //      if layer_parity_ ==0, we only consider hits in even layers
-    int layer_parity_ = 1;
+    int layer_parity_ = 2;
+
+    // number of close layers to form a 3d cluster
+    int close_layer_ = 2;
     
     // energy thresholds
     double seed_threshold_2d_ = 0.1; // MeV
@@ -182,7 +191,7 @@ namespace hcal {
     // scint width = 50mm
     double max_xy_2d_ = 3*50; // mm
     double max_xy_3d_ = 6*50; // mm
-    double max_xy_2d_merge_ = 4*50.; // mm
+    double max_xy_merge_ = 4*50.; // mm
     
     // maximum number of layers for a 3d cluster
     int layer_max_ = 100;
@@ -211,10 +220,12 @@ namespace hcal {
       use_toa_ = use_toa;
       layer_parity_ = layer_parity;
     }
-    void SetMaxXY( double max_xy_2d, double max_xy_3d, double max_xy_2d_merge ) {
+    void SetMaxXY( double max_xy_2d, double max_xy_3d, double max_xy_merge, int close_layer, bool is_merge_2d ) {
       max_xy_2d_ = max_xy_2d;
       max_xy_3d_ = max_xy_3d;
-      max_xy_2d_merge_ = max_xy_2d_merge;
+      max_xy_merge_ = max_xy_merge;
+      close_layer_ = close_layer;
+      is_merge_2d_ = is_merge_2d;
     }
 
     // check distance between hits
