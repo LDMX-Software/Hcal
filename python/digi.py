@@ -46,9 +46,6 @@ class HcalHgcrocEmulator(HgcrocEmulator) :
         self.timeDnSlope = 45.037
         self.timePeak    = 12.698 # the time such that with [parameter 4]=0, the pulse peaks at t=0
 
-        # noise (0.02PE)
-        self.noiseRMS = self.calculateVoltageHcal(0.02) # mV
-
     def calculateVoltageHcal(self, PE) :
         """Calculate the voltage signal [mV] of the input number of photo-electrons (PEs)
         Assuming that 1 PE ~ 5mV
@@ -140,6 +137,8 @@ class HcalDigiProducer(Producer) :
         self.avgReadoutThreshold = 4. #ADCs - noise config only
         self.avgGain = 1.2 #noise config only
         self.avgPedestal = 1. #noise config only
+        # avg noise set to 0.02PE
+        self.avgNoiseRMS = self.hgcroc.calculateVoltageHcal(0.02)/self.avgGain
         
         # input and output collection name parameters
         self.inputCollName = 'HcalSimHits'

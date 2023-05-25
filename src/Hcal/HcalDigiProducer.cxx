@@ -104,8 +104,7 @@ void HcalDigiProducer::configure(framework::config::Parameters& ps) {
   double gain = ps.getParameter<double>("avgGain");
   double pedestal = ps.getParameter<double>("avgPedestal");
   // rms noise in mV
-  noiseGenerator_->setNoise(
-      hgcrocParams.getParameter<double>("noiseRMS"));  // rms noise in mV
+  noiseGenerator_->setNoise(gain*ps.getParameter<double>("avgNoiseRMS"));
   // mean noise amplitude (if using Gaussian Model for the noise) in mV
   noiseGenerator_->setPedestal(gain * pedestal);
   // threshold for readout in mV
@@ -414,9 +413,13 @@ std::cout<<"--------------------------------------------------------"<<std::endl
       float distance_along_bar, distance_ecal;
       float distance_close, distance_far;
       int end_close;
+      const auto orientation{hcalGeometry.getScintillatorOrientation(detID)};
       if (section == ldmx::HcalID::HcalSection::BACK) {
         distance_along_bar =
-            hcalGeometry.layerIsHorizontal(layer) ? position[0] : position[1];
+            (orientation ==
+             ldmx::HcalGeometry::ScintillatorOrientation::horizontal)
+                ? position[0]
+                : position[1];
         end_close = (distance_along_bar > 0) ? 0 : 1;
         distance_close = half_total_width;
         distance_far = half_total_width;
