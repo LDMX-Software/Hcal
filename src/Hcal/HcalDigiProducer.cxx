@@ -53,7 +53,7 @@ void HcalDigiProducer::configure(framework::config::Parameters& ps) {
   //  time [ns] * ( 2^10 / max time in ns ) = clock counts
   ns_ = 1024. / clockCycle_;
 
-  // Configure photon generator
+  // configure photon generator
   scintillationYield_= ps.getParameter<double>("scintillationYield");
   scintillationYieldSigma_= ps.getParameter<double>("scintillationYieldSigma");
   scintillationYieldCutoffLow_= ps.getParameter<double>("scintillationYieldCutoffLow");
