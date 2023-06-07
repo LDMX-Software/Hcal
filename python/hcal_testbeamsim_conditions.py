@@ -30,10 +30,10 @@ tot_calib = SimpleCSVDoubleTableProvider("hcal_tot_calibration",
                                           "low_slope","low_power","low_offset","tot_not",
                                           "channel","flagged"])
 tot_calib.validForAllRows([
+    1.,1.,7.,31400.,
     1.,1.,1.,1.,
-    1.,1.,1.,1.,
-    1.,1.
-]) # dummy value since TOT is not implemented
+    1.,0.
+]) # These need to be updated
 
 toa_calib =  SimpleCSVDoubleTableProvider("hcal_toa_calibration",
                                           ["bx_shift","mean_shift"])
@@ -66,5 +66,5 @@ HcalHgcrocConditionsHardcode.validForAllRows([
     1.2, #GAIN - large ADC gain for now - conversion from ADC to mV
     1. + 4., #READOUT_THRESHOLD - 4 ADC counts above pedestal
     1.*1.2 + 1*5, #TOA_THRESHOLD - mV - 1 PE above pedestal ( 1 PE  - 5 mV conversion)
-    10000., #TOT_THRESHOLD - mV - very large for now
+    2000., #TOT_THRESHOLD - mV
     ])
