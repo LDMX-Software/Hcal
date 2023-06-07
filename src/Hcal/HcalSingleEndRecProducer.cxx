@@ -78,12 +78,18 @@ std::tuple<double, double, int> HcalSingleEndRecProducer::extract_measurements(
   // and figure out sample of maximum amplitude
   int max_sample{0};
   double max_meas{0};
+  //std::cout<<"New Channel"<<std::endl;
   for (std::size_t i_sample{0}; i_sample < digi.size(); i_sample++) {
     // adc logic
-    if (i_sample > 0) sum_adc += (digi.at(i_sample).adc_t() - pedestal);
-
-    // tot logic
-    sum_tot += digi.at(i_sample).tot();
+    if(digi.isADC()){
+      if (i_sample > 0) sum_adc += (digi.at(i_sample).adc_t() - pedestal);
+      //std::cout<<"ADC "<<digi.at(i_sample).adc_t()<<std::endl;
+    }
+    else{
+      // tot logic
+      sum_tot += digi.at(i_sample).tot();
+      //std::cout<<"Sample "<<i_sample<<"  TOT "<<digi.at(i_sample).tot()<<"  Sum TOT "<< sum_tot<<std::endl;
+    }
 
     // toa logic
     if (digi.at(i_sample).toa() > 0) {
@@ -97,7 +103,7 @@ std::tuple<double, double, int> HcalSingleEndRecProducer::extract_measurements(
       // sum toa in given bx - given that multiple bx may be associated with the TOA measurement
       toa_startbx += digi.at(i_sample).toa() * (clock_cycle_ / 1024) + (clock_cycle_ * toa_sample);
     }
-    
+
     if (digi.at(i_sample).adc_t() - pedestal > max_meas) {
       max_meas = digi.at(i_sample).adc_t() - pedestal;
       max_sample = i_sample;
@@ -105,7 +111,7 @@ std::tuple<double, double, int> HcalSingleEndRecProducer::extract_measurements(
   }
   // get toa
   double toa = toa_startbx;
-  
+
   // get toa w.r.t the peak
   //double toa = (max_sample - toa_sample) * clock_cycle_ - toa_startbx;
   // get toa w.r.t the SOI
@@ -120,7 +126,7 @@ void HcalSingleEndRecProducer::configure(framework::config::Parameters& p) {
 
   rec_pass_name_ = p.getParameter("rec_pass_name", rec_pass_name_);
   rec_coll_name_ = p.getParameter("rec_coll_name", rec_coll_name_);
-  
+
   pe_per_mip_ = p.getParameter<double>("pe_per_mip");
   mip_energy_ = p.getParameter<double>("mip_energy");
   clock_cycle_ = p.getParameter<double>("clock_cycle");
@@ -150,11 +156,13 @@ void HcalSingleEndRecProducer::produce(framework::Event& event) {
       extract_measurements(digi, conditions.adcPedestal(digi.id()), conditions.toaCalib(digi.id(), 0));
     auto is_adc = conditions.is_adc(digi.id(), sum_tot);
     if (is_adc) {
+      //std::cout<<"Is ADC"<<std::endl;
       double adc_calib = sum_adc / conditions.adcGain(digi.id(), 0);
       num_mips_equivalent = adc_calib;
     } else {
       double tot_calib = conditions.linearize(digi.id(), sum_tot);
       num_mips_equivalent = tot_calib / conditions.adcGain(digi.id(), 0);
+      //std::cout<<"Is Not ADC "<<"  TOT calib "<<tot_calib<<"  MIPs "<<num_mips_equivalent<<std::endl;
     }
     int PEs = num_mips_equivalent * pe_per_mip_;
     double reconstructed_energy =
