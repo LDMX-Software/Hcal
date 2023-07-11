@@ -161,7 +161,7 @@ namespace hcal {
     ClusterGeometry* geom;
 
     // debug
-    bool debug = true;
+    bool debug = false;
 
     // use TOA hit information or not
     bool use_toa_ = true;

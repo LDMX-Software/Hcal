@@ -421,7 +421,7 @@ void ClusterBuilder::Build3DClusters() {
     // derived from the first available cluster in each layer
     int layer_showermax = -1;
     double e_showermax = seed_threshold_3d_;
-    cout << "finding shower max " << endl;
+    if (debug) cout << "finding shower max " << endl;
     for (auto &clusters : layer_clusters) {
       // since the layer clusters are sorted by energy we just check the first element
       if (clusters.size() > 0) {
@@ -608,7 +608,7 @@ void ClusterBuilder::Build3DClusters() {
 }
 
 void ClusterBuilder::Merge3DClusters(std::vector<Cluster> & clusters3d) {
-  cout << "size " <<  clusters3d.size() << endl;
+  if (debug) cout << "size " <<  clusters3d.size() << endl;
   std::map<int, int> cluster_match;
   for (size_t i = 0; i < clusters3d.size(); ++i) {
      cluster_match[i] = i;
@@ -623,10 +623,10 @@ void ClusterBuilder::Merge3DClusters(std::vector<Cluster> & clusters3d) {
 	// z distance
 	if(distance_xy <= max_xy_merge_) {
 	  cluster_match[j] = cluster_match[i];
-	  cout << "distance between cluster indices "<< i << " " << j << " is: " << distance_xy << " and below " << max_xy_merge_ << " merging.. " << cluster_match[j] << endl;
+	  if (debug) cout << "distance between cluster indices "<< i << " " << j << " is: " << distance_xy << " and below " << max_xy_merge_ << " merging.. " << cluster_match[j] << endl;
 	}
 	else{
-	  cout << "unmerged " << i << " " << cluster_match[i] << " and j " << j << " " << cluster_match[j] << " distance " << distance_xy << endl;
+	  if (debug) cout << "unmerged " << i << " " << cluster_match[i] << " and j " << j << " " << cluster_match[j] << " distance " << distance_xy << endl;
 	}
       }
     }
@@ -634,14 +634,14 @@ void ClusterBuilder::Merge3DClusters(std::vector<Cluster> & clusters3d) {
 
   std::vector<int> to_erase;
   for(auto clus : cluster_match) {
-    cout << "cluster match " << clus.first << " " << clus.second << endl;
+    if (debug) cout << "cluster match " << clus.first << " " << clus.second << endl;
     if(clus.second != clus.first) {
       auto icluster = clusters3d.at(clus.first);
       for(auto cluster2d: icluster.clusters2d)
 	clusters3d.at(clus.second).clusters2d.push_back(cluster2d);
       //for(auto hit: icluster.hits)
       //	clusters3d.at(clus.second).hits.push_back(hit);
-      cout << "erasing index " << clus.first << endl;
+      if (debug) cout << "erasing index " << clus.first << endl;
       to_erase.push_back(clus.first);
     }
   }                                                                                                                                                                                                                                                                           

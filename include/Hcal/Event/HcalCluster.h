@@ -120,12 +120,6 @@ class HcalCluster {
 
   void setEDYDZ(double x) { errDYDZ_=x; }
 
-  void setRMSXYZ(double xx, double yy, double zz) {
-    rmsX_ = xx;
-    rmsY_ = yy;
-    rmsZ_ = zz;
-  }
-
   void setLayer(int layer) { layer_ = layer; }
   
   void setTime(double x) { time_ = x; }

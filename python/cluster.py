@@ -25,8 +25,8 @@ class HcalNewClusterProducer(ldmxcfg.Producer) :
         self.seed_threshold_2d = 0.1
         self.neighbor_threshold_2d = 0.01
 
-        self.seed_threshold_3d = 4 # MeV ( a MIP?)
-        self.neighbor_threshold_3d = 1
+        self.seed_threshold_3d = 4. # MeV ( a MIP?)
+        self.neighbor_threshold_3d = 1.
         
         # number of neighboring strips
         self.num_neighbors = 4
