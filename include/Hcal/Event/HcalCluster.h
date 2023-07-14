@@ -96,6 +96,11 @@ class HcalCluster {
    */
   void setIDs(std::vector<unsigned int>& hitIDs) { hitIDs_ = hitIDs; }
 
+  void setHitValsX(std::vector<float>& x) { hitX_ = x; }
+  void setHitValsY(std::vector<float>& x) { hitY_ = x; }
+  void setHitValsZ(std::vector<float>& x) { hitZ_ = x; }
+  void setHitValsE(std::vector<float>& x) { hitE_ = x; }
+
   /**
    * Sets the three coordinates of the cluster centroid
    * @param x The x coordinate.
@@ -169,6 +174,12 @@ class HcalCluster {
   // get hit rawIDs (unused)
   const std::vector<unsigned int>& getHitIDs() const { return hitIDs_; }
 
+  // ability to store limited hit info
+  const std::vector<float>& getHitX() const { return hitX_; }
+  const std::vector<float>& getHitY() const { return hitY_; }
+  const std::vector<float>& getHitZ() const { return hitZ_; }
+  const std::vector<float>& getHitE() const { return hitE_; }
+
   // get strips
   const std::vector<int>& getStrips() const { return strips_; }
 
@@ -205,6 +216,10 @@ class HcalCluster {
   double errDYDZ_{0};
   double time_{0};
   double depth_{0};
+  std::vector<float> hitX_;
+  std::vector<float> hitY_;
+  std::vector<float> hitZ_;
+  std::vector<float> hitE_;
 
   ClassDef(HcalCluster, 1);
 };
