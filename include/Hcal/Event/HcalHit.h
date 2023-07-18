@@ -42,6 +42,14 @@ class HcalHit : public ldmx::CalorimeterHit {
    */
   void Print() const;
 
+  // int getSection() const { return section_;}
+  // int getLayer() const { return layer_;}
+  // int getStrip() const { return strip_;}
+  
+  // void setSection(int section) { section_ = section;}
+  // void setLayer(int layer) { layer_ = layer;}
+  // void setStrip(int strip) { strip_ = strip;}
+  
   /**
    * Get the number of photoelectrons estimated for this hit.
    * @return Number of photoelectrons, including noise which affects the
@@ -219,7 +227,7 @@ class HcalHit : public ldmx::CalorimeterHit {
   double toaNeg_;
   double amplitudePos_;
   double amplitudeNeg_;
-
+  
   /**
    * The ROOT class definition.
    */
