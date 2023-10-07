@@ -87,6 +87,52 @@ class HcalDigiProducer(Producer) :
         # attenuation length
         self.attenuationLength = 5.; # in m   
 
+        # scintillation yield
+        self.scintillationYield = 30000.; # in photons/MeV
+        self.scintillationYieldSigma = .1; # gaussian distribution with sigma equal to 10% of the mean
+        self.scintillationYieldCutoffLow = .7; # the scintillation yield distribution is cut off at 70% of the mean
+        self.scintillationYieldCutoffHigh = 1.2; # the scintillation yield distribution is cut off at 120% of the mean
+
+        # lookup tables
+        self.lookupTables = [ "@CMAKE_INSTALL_PREFIX@/data/Hcal/LookupTable_2000_0",
+                              "@CMAKE_INSTALL_PREFIX@/data/Hcal/LookupTable_1800_2",
+                              "@CMAKE_INSTALL_PREFIX@/data/Hcal/LookupTable_1600_2",
+                              "@CMAKE_INSTALL_PREFIX@/data/Hcal/LookupTable_1200_2",
+                              "@CMAKE_INSTALL_PREFIX@/data/Hcal/LookupTable_1400_2", 
+                              "@CMAKE_INSTALL_PREFIX@/data/Hcal/LookupTable_600_2" ];
+
+        # SiPM single-pixel response
+        self.singlePixelPeakVoltage = 5.0; # 5 mV
+
+        # SiPM photon map
+        self.photonMap = "@CMAKE_INSTALL_PREFIX@/data/Hcal/photonMap18.root";
+
+        # other SiPM constants
+        self.digitizationStart            =  400.0;     # 0ns  ????
+        self.digitizationEnd              = 1750.0;     # 100ns  ????
+        self.deadSiPMProbability          = 0.01;       # ????
+        self.nPixelsX                     = 40;
+        self.nPixelsY                     = 40;
+        self.inactivePixels               = [ [18,18], [18,19], [18,20], [18,21],
+                                              [19,18], [19,19], [19,20], [19,21],
+                                              [20,18], [20,19], [20,20], [20,21],
+                                              [21,18], [21,19], [21,20], [21,21] ];
+        self.overvoltage                  = 3.0;        #V
+        self.timeConstant                 = 13.3;       #ns  according to an Hamamatsu example with R_q=150kOhm --> tau=R_q*C=13.3ns
+        self.capacitance                  = 8.84e-14;   #F   capacitance of one pixel according to specs
+
+        self.AvalancheProbParam1          = 0.607;      # = p1
+        self.AvalancheProbParam2          = 2.7;        # = p2
+                                                        # Avalanche probability at over voltage v: p1*(1 - exp(-v/p2))
+
+        self.TrapType0Prob                = 0.0;        # 0.14 (Paul's number)  ????
+        self.TrapType1Prob                = 0.0;        # 0.06 (Paul's number)  ????
+        self.TrapType0Lifetime            = 5.0;        # ns  ????
+        self.TrapType1Lifetime            = 50.0;       # ns  ????
+
+        self.ThermalRate                  = 3.0e-4;     # ns^-1     0.3MHz for entire SiPM
+        self.CrossTalkProb                = 0.05;       #
+
         # avg parameters
         self.avgReadoutThreshold = 4. #ADCs - noise config only
         self.avgGain = 1.2 #noise config only
