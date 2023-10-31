@@ -60,6 +60,7 @@ void HcalDigiProducer::configure(framework::config::Parameters& ps) {
   // threshold for readout in mV
   noiseGenerator_->setNoiseThreshold(gain * readoutThreshold);
   doTimeSpreadPerSpill = ps.getParameter<bool>("do_time_spread_per_spill");
+  flatTimeShift = ps.getParameter<double>("flat_time_shift");
   timeSpreadWidthPerSpill =
       ps.getParameter<double>("time_spread_width_per_spill");
   timeSpreadMeanPerSpill =
@@ -126,7 +127,7 @@ void HcalDigiProducer::produce(framework::Event& event) {
   /******************************************************************************************
    * HGCROC Emulation on Simulated Hits (grouped by HcalID)
    ******************************************************************************************/
-  double timeDelta{0.};
+  double timeDelta{flatTimeShift};
   if (doTimeSpreadPerSpill) {
     timeDelta += (randomTime_->Rndm()) * timeSpreadWidthPerSpill +
                  timeSpreadMeanPerSpill;
