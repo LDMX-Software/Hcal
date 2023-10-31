@@ -87,6 +87,10 @@ class HcalDigiProducer : public framework::Producer {
   /// Hgcroc Emulator to digitize analog voltage signals
   std::unique_ptr<ldmx::HgcrocEmulator> hgcroc_;
 
+  std::unique_ptr<TRandom2> randomTime_;
+  bool doTimeSpreadPerSpill{false};
+  double timeSpreadWidthPerSpill{0.};
+  double timeSpreadMeanPerSpill{0.};
   /// Conversion from time in ns to ticks of the internal clock
   double ns_;
 
