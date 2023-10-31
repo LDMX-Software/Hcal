@@ -102,6 +102,9 @@ class HcalDigiProducer(Producer) :
         # Flat time shift to apply to all hits
         self.flat_time_shift = 0.
         self.do_time_spread_per_spill = False
+        self.do_time_spread_per_hit = False
+        self.time_spread_mean_per_hit = 0.
+        self.time_spread_sigma_per_hit = 0.
         self.time_spread_mean_per_spill = 0.
         self.time_spread_width_per_spill = 0.
 class HcalRecProducer(Producer) :
