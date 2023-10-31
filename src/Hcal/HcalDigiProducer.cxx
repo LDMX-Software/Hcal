@@ -60,11 +60,14 @@ void HcalDigiProducer::configure(framework::config::Parameters& ps) {
   // threshold for readout in mV
   noiseGenerator_->setNoiseThreshold(gain * readoutThreshold);
   doTimeSpreadPerSpill = ps.getParameter<bool>("do_time_spread_per_spill");
+  doTimeSpreadPerHit = ps.getParameter<bool>("do_time_spread_per_hit");
   flatTimeShift = ps.getParameter<double>("flat_time_shift");
   timeSpreadWidthPerSpill =
       ps.getParameter<double>("time_spread_width_per_spill");
   timeSpreadMeanPerSpill =
       ps.getParameter<double>("time_spread_mean_per_spill");
+  timeSpreadMeanPerHit = ps.getParameter<double>("time_spread_mean_per_hit");
+  timeSpreadSigmaPerHit = ps.getParameter<double>("time_spread_sigma_per_hit");
 }
 
 void HcalDigiProducer::produce(framework::Event& event) {
@@ -234,7 +237,10 @@ void HcalDigiProducer::produce(framework::Event& event) {
             simHit.getContrib(iContrib).time;  // global time (t=0ns at target)
         time -= position.at(2) /
                 299.702547;  // shift light-speed particle traveling along z
-
+        if (doTimeSpreadPerHit) {
+          time +=
+              randomTime_->Gaus(timeSpreadMeanPerHit, timeSpreadSigmaPerHit);
+        }
         time += timeDelta;
         if (end_close == 0) {
           pulses_posend.emplace_back(voltage * att_close, time + shift_close);
