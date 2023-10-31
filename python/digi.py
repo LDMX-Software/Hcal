@@ -99,6 +99,9 @@ class HcalDigiProducer(Producer) :
         self.inputPassName = ''
         self.digiCollName = 'HcalDigis'
 
+        self.do_time_spread_per_spill = False
+        self.time_spread_mean_per_spill = 0.
+        self.time_spread_width_per_spill = 0.
 class HcalRecProducer(Producer) :
     """Configuration for the HcalRecProducer
 

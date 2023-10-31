@@ -59,6 +59,11 @@ void HcalDigiProducer::configure(framework::config::Parameters& ps) {
   noiseGenerator_->setPedestal(gain * pedestal);
   // threshold for readout in mV
   noiseGenerator_->setNoiseThreshold(gain * readoutThreshold);
+  doTimeSpreadPerSpill = ps.getParameter<bool>("do_time_spread_per_spill");
+  timeSpreadWidthPerSpill =
+      ps.getParameter<double>("time_spread_width_per_spill");
+  timeSpreadMeanPerSpill =
+      ps.getParameter<double>("time_spread_mean_per_spill");
 }
 
 void HcalDigiProducer::produce(framework::Event& event) {
@@ -79,6 +84,12 @@ void HcalDigiProducer::produce(framework::Event& event) {
     const auto& rseed = getCondition<framework::RandomNumberSeedService>(
         framework::RandomNumberSeedService::CONDITIONS_OBJECT_NAME);
     hgcroc_->seedGenerator(rseed.getSeed("HcalDigiProducer::HgcrocEmulator"));
+  }
+  if (randomTime_ == nullptr) {
+    const auto& randomSeed{getCondition<framework::RandomNumberSeedService>(
+        framework::RandomNumberSeedService::CONDITIONS_OBJECT_NAME)};
+    randomTime_ = std::make_unique<TRandom2>(
+        randomSeed.getSeed("HcalDigiProducer::randomTime"));
   }
 
   // Get the Hgcroc Conditions
@@ -115,6 +126,11 @@ void HcalDigiProducer::produce(framework::Event& event) {
   /******************************************************************************************
    * HGCROC Emulation on Simulated Hits (grouped by HcalID)
    ******************************************************************************************/
+  double timeDelta{0.};
+  if (doTimeSpreadPerSpill) {
+    timeDelta += (randomTime_->Rndm()) * timeSpreadWidthPerSpill +
+                 timeSpreadMeanPerSpill;
+  }
   for (auto const& simBar : hitsByID) {
     ldmx::HcalID detID(simBar.first);
     int section = detID.section();
@@ -218,6 +234,7 @@ void HcalDigiProducer::produce(framework::Event& event) {
         time -= position.at(2) /
                 299.702547;  // shift light-speed particle traveling along z
 
+        time += timeDelta;
         if (end_close == 0) {
           pulses_posend.emplace_back(voltage * att_close, time + shift_close);
           pulses_negend.emplace_back(voltage * att_far, time + shift_far);
