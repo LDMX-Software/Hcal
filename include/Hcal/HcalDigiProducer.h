@@ -10,6 +10,8 @@
 //----------//
 //   LDMX   //
 //----------//
+#include <TRandom2.h>
+
 #include "DetDescr/HcalDigiID.h"
 #include "DetDescr/HcalGeometry.h"
 #include "DetDescr/HcalID.h"
@@ -91,6 +93,7 @@ class HcalDigiProducer : public framework::Producer {
   bool doTimeSpreadPerSpill{false};
   double timeSpreadWidthPerSpill{0.};
   double timeSpreadMeanPerSpill{0.};
+  double flatTimeShift{0.};
   /// Conversion from time in ns to ticks of the internal clock
   double ns_;
 
