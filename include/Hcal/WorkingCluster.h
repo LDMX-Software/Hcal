@@ -14,7 +14,7 @@ namespace hcal {
 
 class WorkingCluster {
  public:
-  WorkingCluster(const ldmx::HcalHit* eh, const ldmx::HcalGeometry& geom);
+              WorkingCluster(const ldmx::HcalHit* eh, const ldmx::HcalGeometry& geom);
 
   ~WorkingCluster(){};
 
