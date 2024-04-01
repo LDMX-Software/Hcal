@@ -116,8 +116,8 @@ class HcalDigiProducer(Producer) :
         # Units are same as the time unit of the input hits
         self.time_spread_per_spill_type = 1
         self.time_spread_per_hit_type = 0
-        self.time_spread_per_spill_parameters = [0., 0.]
-        self.time_spread_per_hit_parameters = [1., 1.]
+        self.time_spread_per_spill_parameters = []
+        self.time_spread_per_hit_parameters = []
 
 class HcalRecProducer(Producer) :
     """Configuration for the HcalRecProducer
