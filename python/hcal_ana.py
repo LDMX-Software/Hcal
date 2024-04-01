@@ -2,6 +2,29 @@
 
 from LDMX.Framework import ldmxcfg
 
+
+class HcalResolutionAnalyzer(ldmxcfg.Analyzer):
+    def __init__(
+        self,
+        name="HcalResolutionAnalyzer",
+        sim_coll_name="HcalSimHits",
+        rec_coll_name="HcalRecHits",
+        run_number=1,
+        input_pass_name="",
+        max_energy_histogram_fraction=0.4,
+        max_events_per_run=1000,
+        bins=100,
+    ):
+        super().__init__(name, "hcal::HcalResolutionAnalyzer", "Hcal")
+        self.sim_coll_name = sim_coll_name
+        self.rec_coll_name = rec_coll_name
+        self.input_pass_name = input_pass_name
+        self.max_events_per_run=max_events_per_run
+        self.run_number = run_number
+        self.max_energy_histogram_fraction = max_energy_histogram_fraction
+        self.bins=bins
+
+
 class HcalPedestalAnalyzer(ldmxcfg.Analyzer) :
     """Constructs standard pedestal text files and
     optionally produces histograms for each channel.
@@ -47,5 +70,3 @@ class HcalPedestalAnalyzer(ldmxcfg.Analyzer) :
         self.low_cutoff = low_cutoff
         self.high_cutoff = high_cutoff
         self.comments=comments
-
-
