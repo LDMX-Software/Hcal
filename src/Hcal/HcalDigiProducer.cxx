@@ -75,21 +75,18 @@ void HcalDigiProducer::configure(framework::config::Parameters& ps) {
   // Time spread parameters
   // Per hit
   const auto& timeSpreadPerHit{framework::config::Parameters};
-  int type =
-      ps.getParameter<int>(timeSpreadPerHitType.getParameter<int>("kind"));
-  timeSpreadPerHitParameters = ps.getParameter<std::vector<double>>(
-      timeSpreadPerHit.getParameter<std::vector<double>>("parameters"));
- doTimeSpreadPerHit = type != 0;
- timeSpreadPerHitType = static_cast<TimeSpreadType>(type);
+  int kind = timeSpreadPerHitType.getParameter<int>("kind");
+  timeSpreadPerHitParameters =
+      timeSpreadPerHit.getParameter<std::vector<double>>("parameters");
+  doTimeSpreadPerHit = kind != 0;
+  timeSpreadPerHitType = static_cast<TimeSpreadType>(kind);
   // Per spill / event
   const auto& timeSpreadPerSpill{framework::config::Parameters};
-  int type =
-      ps.getParameter<int>(timeSpreadPerSpillType.getParameter<int>("kind"));
-  timeSpreadPerSpillParameters = ps.getParameter<std::vector<double>>(
-      timeSpreadPerSpill.getParameter<std::vector<double>>("parameters"));
- doTimeSpreadPerSpill = type != 0;
- timeSpreadPerSpillType = static_cast<TimeSpreadType>(type);
-
+  kind = timeSpreadPerSpillType.getParameter<int>("kind");
+  timeSpreadPerSpillParameters =
+      timeSpreadPerSpill.getParameter<std::vector<double>>("parameters");
+  doTimeSpreadPerSpill = kind != 0;
+  timeSpreadPerSpillType = static_cast<TimeSpreadType>(kind);
 }
 
 void HcalDigiProducer::produce(framework::Event& event) {
