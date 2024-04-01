@@ -110,11 +110,11 @@ class HcalDigiProducer : public framework::Producer {
   std::unique_ptr<TRandom2> randomTime_;
   bool doTimeSpreadPerSpill{false};
   TimeSpreadType timeSpreadPerSpillType{TimeSpreadType::UNIFORM};
-  std::vector<double> timeSpreadPerSpillParams{};
+  std::vector<double> timeSpreadPerSpillParameters{};
 
   bool doTimeSpreadPerHit{false};
   TimeSpreadType timeSpreadPerHitType{TimeSpreadType::GAUSSIAN};
-  std::vector<double> timeSpreadPerHitParams{};
+  std::vector<double> timeSpreadPerHitParameters{};
 
   double flatTimeShift{0.};
   /// Conversion from time in ns to ticks of the internal clock

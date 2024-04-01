@@ -103,23 +103,27 @@ void HcalDigiProducer::configure(framework::config::Parameters& ps) {
   noiseGenerator_->setPedestal(gain * pedestal);
   // threshold for readout in mV
   noiseGenerator_->setNoiseThreshold(gain * readoutThreshold);
-  doTimeSpreadPerSpill = ps.getParameter<bool>("do_time_spread_per_spill");
-  doTimeSpreadPerHit = ps.getParameter<bool>("do_time_spread_per_hit");
   flatTimeShift = ps.getParameter<double>("flat_time_shift");
   // Time spread parameters
   // Per hit
-  int timeSpreadType = ps.getParameter<int>("time_spread_per_hit_type");
-  timeSpreadPerHitParams =
-      ps.getParameter<std::vector<double>>("time_spread_per_hit_parameters");
-  timeSpreadPerHitType =
-      validateTimeSpreadType(timeSpreadType, timeSpreadPerHitParams);
-
+  doTimeSpreadPerHit = ps.getParameter<bool>("do_time_spread_per_hit");
+  if (doTimeSpreadPerHit) {
+    int timeSpreadType = ps.getParameter<int>("time_spread_per_hit_type");
+    timeSpreadPerHitParameters =
+        ps.getParameter<std::vector<double>>("time_spread_per_hit_parameters");
+    timeSpreadPerHitType =
+        validateTimeSpreadType(timeSpreadType, timeSpreadPerHitParameters);
+  }
   // Per spill/event
-  timeSpreadType = ps.getParameter<int>("time_spread_per_spill_type");
-  timeSpreadPerSpillParams =
-      ps.getParameter<std::vector<double>>("time_spread_per_spill_parameters");
-  timeSpreadPerSpillType =
-      validateTimeSpreadType(timeSpreadType, timeSpreadPerSpillParams);
+  doTimeSpreadPerSpill = ps.getParameter<bool>("do_time_spread_per_spill");
+  if (doTimeSpreadPerSpill) {
+    int timeSpreadType = ps.getParameter<int>("time_spread_per_spill_type");
+
+    timeSpreadPerSpillParameters = ps.getParameter<std::vector<double>>(
+        "time_spread_per_spill_parameters");
+    timeSpreadPerSpillType =
+        validateTimeSpreadType(timeSpreadType, timeSpreadPerSpillParameters);
+  }
 }
 
 void HcalDigiProducer::produce(framework::Event& event) {
@@ -185,7 +189,7 @@ void HcalDigiProducer::produce(framework::Event& event) {
   double timeDelta{flatTimeShift};
   if (doTimeSpreadPerSpill) {
     timeDelta +=
-        makeTimeDelta(timeSpreadPerSpillType, timeSpreadPerSpillParams);
+        makeTimeDelta(timeSpreadPerSpillType, timeSpreadPerSpillParameters);
   }
   for (auto const& simBar : hitsByID) {
     ldmx::HcalID detID(simBar.first);
@@ -290,7 +294,7 @@ void HcalDigiProducer::produce(framework::Event& event) {
         time -= position.at(2) /
                 299.702547;  // shift light-speed particle traveling along z
         if (doTimeSpreadPerHit) {
-          time += makeTimeDelta(timeSpreadPerHitType, timeSpreadPerHitParams);
+          time += makeTimeDelta(timeSpreadPerHitType, timeSpreadPerHitParameters);
         }
         time += timeDelta;
         if (end_close == 0) {
