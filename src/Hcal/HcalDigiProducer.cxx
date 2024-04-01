@@ -74,15 +74,17 @@ void HcalDigiProducer::configure(framework::config::Parameters& ps) {
   flatTimeShift = ps.getParameter<double>("flat_time_shift");
   // Time spread parameters
   // Per hit
-  const auto& timeSpreadPerHit{framework::config::Parameters};
-  int kind = timeSpreadPerHitType.getParameter<int>("kind");
+  const auto& timeSpreadPerHit{
+      ps.getParameter<framework::config::Parameters>("time_spread_per_hit")};
+  int kind = timeSpreadPerHit.getParameter<int>("kind");
   timeSpreadPerHitParameters =
       timeSpreadPerHit.getParameter<std::vector<double>>("parameters");
   doTimeSpreadPerHit = kind != 0;
   timeSpreadPerHitType = static_cast<TimeSpreadType>(kind);
   // Per spill / event
-  const auto& timeSpreadPerSpill{framework::config::Parameters};
-  kind = timeSpreadPerSpillType.getParameter<int>("kind");
+  const auto& timeSpreadPerSpill{
+      ps.getParameter<framework::config::Parameters>("time_spread_per_spill")};
+  kind = timeSpreadPerSpill.getParameter<int>("kind");
   timeSpreadPerSpillParameters =
       timeSpreadPerSpill.getParameter<std::vector<double>>("parameters");
   doTimeSpreadPerSpill = kind != 0;
