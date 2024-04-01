@@ -24,7 +24,51 @@ HcalDigiProducer::HcalDigiProducer(const std::string& name,
    */
   noiseGenerator_ = std::make_unique<ldmx::NoiseGenerator>();
 }
+HcalDigiProducer::TimeSpreadType HcalDigiProducer::validateTimeSpreadType(
+    int kind, std::vector<double>& parameters) const {
+  auto type{static_cast<TimeSpreadType>(kind)};
+  switch (type) {
+    case TimeSpreadType::GAUSSIAN:
+      if (parameters.size() != 2) {
+        EXCEPTION_RAISE(
+            "InvalidParameter",
+            "Time spread type Gaussian requires 2 parameters (mean, sigma)");
+      }
+      break;
+    case TimeSpreadType::UNIFORM:
+      if (parameters.size() != 2) {
+        EXCEPTION_RAISE(
+            "InvalidParameter",
+            "Time spread type Uniform requires 2 parameters (min, max)");
+      }
+      break;
+    case TimeSpreadType::CONSTANT:
+      if (parameters.size() != 1) {
+        EXCEPTION_RAISE(
+            "InvalidParameter",
+            "Time spread type Constant requires 1 parameter (value)");
+      }
+      break;
+    default:
+      EXCEPTION_RAISE("InvalidParameter",
+                      "Invalid time spread type, must be 0 (Gaussian), 1 "
+                      "(Uniform), or 2 (Constant))");
+  }
+  return type;
+}
 
+double HcalDigiProducer::makeTimeDelta(TimeSpreadType kind,
+                                       std::vector<double>& parameters) const {
+  switch (kind) {
+    case TimeSpreadType::UNIFORM:
+      return randomTime_->Uniform(parameters[0], parameters[1]);
+    case TimeSpreadType::CONSTANT:
+      return parameters[0];
+    case TimeSpreadType::GAUSSIAN:
+      return randomTime_->Gaus(parameters[0], parameters[1]);
+  }
+  return 0;
+}
 void HcalDigiProducer::configure(framework::config::Parameters& ps) {
   // settings of readout chip
   //  used  in actual digitization
@@ -62,12 +106,20 @@ void HcalDigiProducer::configure(framework::config::Parameters& ps) {
   doTimeSpreadPerSpill = ps.getParameter<bool>("do_time_spread_per_spill");
   doTimeSpreadPerHit = ps.getParameter<bool>("do_time_spread_per_hit");
   flatTimeShift = ps.getParameter<double>("flat_time_shift");
-  timeSpreadWidthPerSpill =
-      ps.getParameter<double>("time_spread_width_per_spill");
-  timeSpreadMeanPerSpill =
-      ps.getParameter<double>("time_spread_mean_per_spill");
-  timeSpreadMeanPerHit = ps.getParameter<double>("time_spread_mean_per_hit");
-  timeSpreadSigmaPerHit = ps.getParameter<double>("time_spread_sigma_per_hit");
+  // Time spread parameters
+  // Per hit
+  int timeSpreadType = ps.getParameter<int>("time_spread_per_hit_type");
+  timeSpreadPerHitParams =
+      ps.getParameter<std::vector<double>>("time_spread_per_hit_parameters");
+  timeSpreadPerHitType =
+      validateTimeSpreadType(timeSpreadType, timeSpreadPerHitParams);
+
+  // Per spill/event
+  timeSpreadType = ps.getParameter<int>("time_spread_per_spill_type");
+  timeSpreadPerSpillParams =
+      ps.getParameter<std::vector<double>>("time_spread_per_spill_parameters");
+  timeSpreadPerSpillType =
+      validateTimeSpreadType(timeSpreadType, timeSpreadPerSpillParams);
 }
 
 void HcalDigiProducer::produce(framework::Event& event) {
@@ -132,8 +184,8 @@ void HcalDigiProducer::produce(framework::Event& event) {
    ******************************************************************************************/
   double timeDelta{flatTimeShift};
   if (doTimeSpreadPerSpill) {
-    timeDelta += (randomTime_->Rndm()) * timeSpreadWidthPerSpill +
-                 timeSpreadMeanPerSpill;
+    timeDelta +=
+        makeTimeDelta(timeSpreadPerSpillType, timeSpreadPerSpillParams);
   }
   for (auto const& simBar : hitsByID) {
     ldmx::HcalID detID(simBar.first);
@@ -171,9 +223,9 @@ void HcalDigiProducer::produce(framework::Event& event) {
        *     - if the position along the bar > 0, the close pulse's end is 0,
        *     else 1.
        *     For side Hcal:
-       *     - if the position along the bar > half_width point of the bar, the
-       *     close pulse's end is 0, else 1.
-       *     The far pulse's end will be opposite to the close pulse's end.
+       *     - if the position along the bar > half_width point of the bar,
+       * the close pulse's end is 0, else 1. The far pulse's end will be
+       * opposite to the close pulse's end.
        *
        * (3) Find the distance to each end (positive and negative) from the
        *     origin.
@@ -238,8 +290,7 @@ void HcalDigiProducer::produce(framework::Event& event) {
         time -= position.at(2) /
                 299.702547;  // shift light-speed particle traveling along z
         if (doTimeSpreadPerHit) {
-          time +=
-              randomTime_->Gaus(timeSpreadMeanPerHit, timeSpreadSigmaPerHit);
+          time += makeTimeDelta(timeSpreadPerHitType, timeSpreadPerHitParams);
         }
         time += timeDelta;
         if (end_close == 0) {
@@ -306,8 +357,8 @@ void HcalDigiProducer::produce(framework::Event& event) {
            layer++) {
         numChannelsInSection += hcalGeometry.getNumStrips(section, layer);
       }
-      // for back Hcal we have double readout, therefore we multiply the number
-      // of channels by 2.
+      // for back Hcal we have double readout, therefore we multiply the
+      // number of channels by 2.
       if (section == ldmx::HcalID::HcalSection::BACK) {
         numChannelsInSection *= 2;
       }

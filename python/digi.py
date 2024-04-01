@@ -102,23 +102,22 @@ class HcalDigiProducer(Producer) :
         # Flat time shift to apply to all hits
         self.flat_time_shift = 0.
 
-        # Apply a timeshift with rectangular distribution to each event
+        # Apply a timeshift to each event
         self.do_time_spread_per_spill = False
-        # Apply a gaussian timeshift to each hit
+        # Apply a timeshift to each hit
         self.do_time_spread_per_hit = False
 
-        # Give these better names once we have converged on what the
-        # distribution should be...
+        # Type of distribution and parameters to use for time spreads. Currently
+        # implemented are
+        # 0: Gaussian -> parameters[0] = mean, parameters[1] = sigma
+        # 1: Uniform -> parameters[0] = min, parameters[1] = max
+        # 2: Constant -> parameters[0] = value
         #
-        # Currently for rectangular distribution start should be mean - sigma/2
-        # and end mean + sigma/2. Leftover from when this was also gaussian.
-        #
-
-        self.time_spread_mean_per_hit = 0.
-        self.time_spread_sigma_per_hit = 0.
-
-        self.time_spread_mean_per_spill = 0.
-        self.time_spread_width_per_spill = 0.
+        # Units are same as the time unit of the input hits
+        self.time_spread_per_spill_type = 1
+        self.time_spread_per_hit_type = 0
+        self.time_spread_per_spill_parameters = [0., 0.]
+        self.time_spread_per_hit_parameters = [1., 1.]
 
 class HcalRecProducer(Producer) :
     """Configuration for the HcalRecProducer

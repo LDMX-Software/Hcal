@@ -51,6 +51,24 @@ class HcalDigiProducer : public framework::Producer {
    */
   void produce(framework::Event& event) override;
 
+  enum class TimeSpreadType {
+    GAUSSIAN = 0,
+    UNIFORM = 1,
+    CONSTANT = 2,
+  };
+
+  /** Create a randomized time delta based on the configured time spread type.
+   * Currently defined options are:
+   * 0: Gaussian -> parameters[0] = mean, parameters[1] = sigma
+   * 1: Uniform -> parameters[0] = min, parameters[1] = max
+   * 2: Constant -> parameters[0] = value
+   */
+  double makeTimeDelta(TimeSpreadType kind,
+                       std::vector<double>& parameters) const;
+
+  TimeSpreadType validateTimeSpreadType(int kind,
+                                        std::vector<double>& parameters) const;
+
  private:
   ///////////////////////////////////////////////////////////////////////////////////////
   // Python Configuration Parameters
@@ -91,12 +109,12 @@ class HcalDigiProducer : public framework::Producer {
 
   std::unique_ptr<TRandom2> randomTime_;
   bool doTimeSpreadPerSpill{false};
-  double timeSpreadWidthPerSpill{0.};
-  double timeSpreadMeanPerSpill{0.};
+  TimeSpreadType timeSpreadPerSpillType{TimeSpreadType::UNIFORM};
+  std::vector<double> timeSpreadPerSpillParams{};
 
   bool doTimeSpreadPerHit{false};
-  double timeSpreadSigmaPerHit{0.};
-  double timeSpreadMeanPerHit{0.};
+  TimeSpreadType timeSpreadPerHitType{TimeSpreadType::GAUSSIAN};
+  std::vector<double> timeSpreadPerHitParams{};
 
   double flatTimeShift{0.};
   /// Conversion from time in ns to ticks of the internal clock
