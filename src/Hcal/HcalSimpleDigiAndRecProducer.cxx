@@ -140,7 +140,6 @@ void HcalSimpleDigiAndRecProducer::produce(framework::Event& event) {
     recHit.setStrip(hitID.strip());
     recHit.setLayer(hitID.layer());
     recHit.setEnergy(edep);
-    hcalRecHits.push_back(recHit);
   }
   event.add(output_coll_name, hcalRecHits);
 }
