@@ -61,7 +61,7 @@ void HcalSimpleDigiAndRecProducer::produce(framework::Event& event) {
     }
   }
   for (const auto& [barID, simhits_in_bar] : hits_by_id) {
-    ldmx::HcalHit recHit{};
+    ldmx::HcalHit& recHit = hcalRecHits.emplace_back();
     double edep{};
     double time{};
     std::vector<double> pos{0, 0, 0};
