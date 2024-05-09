@@ -1,3 +1,7 @@
+# :warning: Archived :warning:
+This repository is archived.
+v0.3.7 was merged into ldmx-sw as a subdirectory where development continues.
+
 # Hcal
 
 Digi emulation, reconstruction, veto, and (some) analysis code for the Hcal subsystem of LDMX.
