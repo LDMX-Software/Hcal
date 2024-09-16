@@ -22,6 +22,7 @@ if(BUILD_EVENT_ONLY)
   setup_library(module Hcal
                 name Event
                 dependencies ROOT::Core Recon::Event
+                Geant4::Interface 
                 register_target)
   return()
 
@@ -29,6 +30,7 @@ endif()
 
 setup_library(module Hcal
               dependencies ROOT::Physics 
+              Geant4::Interface 
               Framework::Framework Recon::Event Tools::Tools DetDescr::DetDescr 
 )
 

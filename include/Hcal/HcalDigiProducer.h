@@ -14,6 +14,8 @@
 #include "DetDescr/HcalGeometry.h"
 #include "DetDescr/HcalID.h"
 #include "Framework/EventProcessor.h"
+#include "Hcal/HcalPhotonGenerator.h"
+#include "Hcal/HcalChargeGenerator.h"
 #include "Recon/Event/EventConstants.h"
 #include "Recon/Event/HgcrocDigiCollection.h"
 #include "SimCore/Event/SimCalorimeterHit.h"
@@ -50,7 +52,6 @@ class HcalDigiProducer : public framework::Producer {
   void produce(framework::Event& event) override;
 
  private:
-  ///////////////////////////////////////////////////////////////////////////////////////
   // Python Configuration Parameters
 
   /// input hit collection name
@@ -77,12 +78,50 @@ class HcalDigiProducer : public framework::Producer {
   /// Strip attenuation length [m]
   double attlength_;
 
+  // random number generators
+  CLHEP::HepJamesRandom engine_;
+  CLHEP::RandFlat       randFlat_;
+  CLHEP::RandGaussQ     randGaussQ_;
+  CLHEP::RandPoissonQ   randPoissonQ_;
+
+  /****************************************************************************************** 
+   * Usage of photon and charge generator 
+   *
+   * Photon generator: 
+   *  generates individual photons based on the deposited energy of the track going through the scintillator
+   *  uses lookup tables (as function of scintillator length) to determine Probability 
+   * Charge generator: 
+   *  simulates the response of the SiPM pixels to incoming photons
+   *  generate individual pixes chargess based on arriving photons and add noise
+   ******************************************************************************************/
+
+  /// PHOTON GENERATOR
+  /// mean scintillation yield
+  double scintillationYield_;
+  /// sigma of scintillation yield
+  double scintillationYieldSigma_;
+  /// cut-off for random scintillation yield
+  double scintillationYieldCutoffLow_;
+  double scintillationYieldCutoffHigh_;
+
+  // map of photon generators per scintillatorLength and reflectorType
+  std::map<std::pair<int,int>, std::shared_ptr<HcalPhotonGenerator> > photonGenerators_;
+
+  // variables for charge generator
+  double singlePixelPeakVoltage_;  // Peak voltage of the single pixel waveform [mV]
+  double deadSiPMProbability_;
+
+  std::shared_ptr<HcalChargeGenerator> chargeGenerator_;
+
   ///////////////////////////////////////////////////////////////////////////////////////
   // Other member variables
 
   /// Put noise into empty channels, not configurable, only helpful in
   /// development
   bool noise_{true};
+
+  /// Use photon generator
+  bool photongen_{true};
 
   /// Hgcroc Emulator to digitize analog voltage signals
   std::unique_ptr<ldmx::HgcrocEmulator> hgcroc_;
