@@ -25,6 +25,18 @@ HcalDigiProducer::HcalDigiProducer(const std::string& name,
   noiseGenerator_ = std::make_unique<ldmx::NoiseGenerator>();
 }
 
+double HcalDigiProducer::makeTimeDelta(TimeSpreadType kind,
+                                       std::vector<double>& parameters) const {
+  switch (kind) {
+    case TimeSpreadType::UNIFORM:
+      return randomTime_->Uniform(parameters[0], parameters[1]);
+    case TimeSpreadType::CONSTANT:
+      return parameters[0];
+    case TimeSpreadType::GAUSSIAN:
+      return randomTime_->Gaus(parameters[0], parameters[1]);
+  }
+  return 0;
+}
 void HcalDigiProducer::configure(framework::config::Parameters& ps) {
   // settings of readout chip
   //  used  in actual digitization
@@ -59,6 +71,24 @@ void HcalDigiProducer::configure(framework::config::Parameters& ps) {
   noiseGenerator_->setPedestal(gain * pedestal);
   // threshold for readout in mV
   noiseGenerator_->setNoiseThreshold(gain * readoutThreshold);
+  flatTimeShift = ps.getParameter<double>("flat_time_shift");
+  // Time spread parameters
+  // Per hit
+  const auto& timeSpreadPerHit{
+      ps.getParameter<framework::config::Parameters>("time_spread_per_hit")};
+  int kind = timeSpreadPerHit.getParameter<int>("kind");
+  timeSpreadPerHitParameters =
+      timeSpreadPerHit.getParameter<std::vector<double>>("parameters");
+  doTimeSpreadPerHit = kind != 0;
+  timeSpreadPerHitType = static_cast<TimeSpreadType>(kind);
+  // Per spill / event
+  const auto& timeSpreadPerSpill{
+      ps.getParameter<framework::config::Parameters>("time_spread_per_spill")};
+  kind = timeSpreadPerSpill.getParameter<int>("kind");
+  timeSpreadPerSpillParameters =
+      timeSpreadPerSpill.getParameter<std::vector<double>>("parameters");
+  doTimeSpreadPerSpill = kind != 0;
+  timeSpreadPerSpillType = static_cast<TimeSpreadType>(kind);
 }
 
 void HcalDigiProducer::produce(framework::Event& event) {
@@ -79,6 +109,12 @@ void HcalDigiProducer::produce(framework::Event& event) {
     const auto& rseed = getCondition<framework::RandomNumberSeedService>(
         framework::RandomNumberSeedService::CONDITIONS_OBJECT_NAME);
     hgcroc_->seedGenerator(rseed.getSeed("HcalDigiProducer::HgcrocEmulator"));
+  }
+  if (randomTime_ == nullptr) {
+    const auto& randomSeed{getCondition<framework::RandomNumberSeedService>(
+        framework::RandomNumberSeedService::CONDITIONS_OBJECT_NAME)};
+    randomTime_ = std::make_unique<TRandom2>(
+        randomSeed.getSeed("HcalDigiProducer::randomTime"));
   }
 
   // Get the Hgcroc Conditions
@@ -115,6 +151,11 @@ void HcalDigiProducer::produce(framework::Event& event) {
   /******************************************************************************************
    * HGCROC Emulation on Simulated Hits (grouped by HcalID)
    ******************************************************************************************/
+  double timeDelta{flatTimeShift};
+  if (doTimeSpreadPerSpill) {
+    timeDelta +=
+        makeTimeDelta(timeSpreadPerSpillType, timeSpreadPerSpillParameters);
+  }
   for (auto const& simBar : hitsByID) {
     ldmx::HcalID detID(simBar.first);
     int section = detID.section();
@@ -151,9 +192,9 @@ void HcalDigiProducer::produce(framework::Event& event) {
        *     - if the position along the bar > 0, the close pulse's end is 0,
        *     else 1.
        *     For side Hcal:
-       *     - if the position along the bar > half_width point of the bar, the
-       *     close pulse's end is 0, else 1.
-       *     The far pulse's end will be opposite to the close pulse's end.
+       *     - if the position along the bar > half_width point of the bar,
+       * the close pulse's end is 0, else 1. The far pulse's end will be
+       * opposite to the close pulse's end.
        *
        * (3) Find the distance to each end (positive and negative) from the
        *     origin.
@@ -217,7 +258,11 @@ void HcalDigiProducer::produce(framework::Event& event) {
             simHit.getContrib(iContrib).time;  // global time (t=0ns at target)
         time -= position.at(2) /
                 299.702547;  // shift light-speed particle traveling along z
-
+        if (doTimeSpreadPerHit) {
+          time +=
+              makeTimeDelta(timeSpreadPerHitType, timeSpreadPerHitParameters);
+        }
+        time += timeDelta;
         if (end_close == 0) {
           pulses_posend.emplace_back(voltage * att_close, time + shift_close);
           pulses_negend.emplace_back(voltage * att_far, time + shift_far);
@@ -282,8 +327,8 @@ void HcalDigiProducer::produce(framework::Event& event) {
            layer++) {
         numChannelsInSection += hcalGeometry.getNumStrips(section, layer);
       }
-      // for back Hcal we have double readout, therefore we multiply the number
-      // of channels by 2.
+      // for back Hcal we have double readout, therefore we multiply the
+      // number of channels by 2.
       if (section == ldmx::HcalID::HcalSection::BACK) {
         numChannelsInSection *= 2;
       }
